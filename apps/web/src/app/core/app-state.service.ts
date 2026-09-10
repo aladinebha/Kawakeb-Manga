@@ -1,5 +1,6 @@
 import { Injectable, OnDestroy, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, tap, map, Observable, of } from 'rxjs';
 import {
   User, Project, Chapter, Document, StoryEntity, StoryRelationship, TimelineEvent,
   ContinuityNotice, MemoryProposal, SemanticMemoryChunk, Workspace, Version, Proposal,
@@ -679,10 +680,22 @@ export class AppStateService implements OnInit, OnDestroy {
       .subscribe(refs => (this.visualReferences = refs));
   }
 
+  // AI and Files
+  uploadFile(file: File): Observable<{url: string}> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{url: string}>(`/api/uploads`, formData);
+  }
+
+  generateImage(prompt: string): Observable<{url: string}> {
+    if (!this.workspace) return of({url: ''});
+    return this.http.post<{url: string}>(`/api/projects/${this.workspace.project.id}/ai/generate-image`, {prompt});
+  }
+
   addVisualReference(entityId: string, filePath: string, caption: string, type: string) {
     if (!this.workspace) return;
     this.http
-      .post<VisualReference>(`/api/projects/${this.workspace.project.id}/visual-references`, {
+      .post<any>(`/api/projects/${this.workspace.project.id}/visual-references`, {
         entityId, filePath, caption, type, status: 'PROPOSED'
       })
       .subscribe(ref => {

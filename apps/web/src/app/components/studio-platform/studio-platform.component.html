@@ -335,7 +335,7 @@
             <p class="empty-hint">No visual references attached.</p>
           </ng-template>
           <div class="add-ref-box">
-            <input #refUrl placeholder="Image URL / Path">
+            <input type="file" #refFile accept="image/*">
             <input #refCaption placeholder="Caption">
             <select #refType>
               <option value="CHARACTER_SHEET">Character Sheet</option>
@@ -343,7 +343,7 @@
               <option value="LOCATION_MOODBOARD">Location Moodboard</option>
               <option value="CONCEPT_ART">Concept Art</option>
             </select>
-            <button class="action-btn" (click)="state.addVisualReference(state.selectedEntity.id, refUrl.value, refCaption.value, refType.value); refUrl.value=''; refCaption.value=''">+ Attach</button>
+            <button class="action-btn" (click)="onFileUpload(refFile, state.selectedEntity.id, refCaption.value, refType.value); refCaption.value=''">+ Upload & Attach</button>
           </div>
         </div>
 
@@ -553,6 +553,7 @@
                 <input #panelVisual placeholder="Visual Prompt...">
                 <input #panelDialogue placeholder="Dialogue (optional)...">
                 <button class="action-btn" (click)="state.addPanel(scene.id, state.active!.chapterId!, panelVisual.value, panelDialogue.value); panelVisual.value=''; panelDialogue.value=''">+ Panel</button>
+                <button class="action-btn-sparkle" (click)="onGenerateImage(scene.id, state.active!.chapterId!, panelVisual.value, panelDialogue.value); panelVisual.value=''; panelDialogue.value=''">✨ Generate AI Image</button>
               </div>
             </div>
           </div>
