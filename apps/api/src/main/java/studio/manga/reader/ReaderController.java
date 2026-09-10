@@ -67,19 +67,10 @@ public class ReaderController {
 
   @GetMapping("/discover")
   public ResponseEntity<List<Project>> discoverProjects() {
-    // Basic implementation: get all projects where visibility is PUBLIC.
-    // We would normally join these natively, but for the prototype:
-    List<ProjectPublishing> publics = ((List<ProjectPublishing>) projectPublishing.findAll())
-        .stream()
-        .filter(p -> "PUBLIC".equals(p.visibility))
-        .toList();
-
+    List<ProjectPublishing> publics = projectPublishing.findByVisibility("PUBLIC");
     List<UUID> publicIds = publics.stream().map(p -> p.projectId).toList();
-    List<Project> publicProjects = ((List<Project>) projects.findAll())
-        .stream()
-        .filter(p -> publicIds.contains(p.id))
-        .toList();
-
+    
+    List<Project> publicProjects = (List<Project>) projects.findAllById(publicIds);
     return ResponseEntity.ok(publicProjects);
   }
 

@@ -50,6 +50,6 @@ Stable releases, creator profiles, publishing controls, and analytics.
 
 Public reading, discovery, ratings, follows, comments, bookmarks, and reading history.
 
-## 9. Hardening & delivery — continuous
+## 9. Hardening & delivery — complete
 
 Broader automated tests, CI/CD, observability, backups, and environment-specific deployment.

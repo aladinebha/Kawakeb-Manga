@@ -1852,9 +1852,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 24px;
-  background: #181614;
+  background: rgba(24, 22, 20, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   color: #fff;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 .global-top-bar .brand {
   font: 300 18px Georgia, serif;
@@ -1875,7 +1881,7 @@
   border-radius: 4px;
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .mode-toggles button:hover {
   color: #fff;
@@ -1907,9 +1913,11 @@
 
 /* Reader Views */
 .reader-platform {
-  background: #fcfbfa;
+  background: linear-gradient(135deg, #fcfbfa 0%, #f4f0ea 100%);
   min-height: 100vh;
   padding: 40px;
+}
+.discovery-view {
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -1923,16 +1931,18 @@
   gap: 24px;
 }
 .project-card {
-  background: #fff;
-  border: 1px solid #e7dfd5;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(231, 223, 213, 0.8);
+  border-radius: 12px;
   padding: 16px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .project-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.05);
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.08);
+  background: #fff;
 }
 .cover-placeholder {
   height: 280px;
