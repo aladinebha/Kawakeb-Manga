@@ -1,0 +1,834 @@
+    <main class="studio" *ngIf="state.workspace; else welcome">
+  <!-- Left Workspace Rail -->
+  <aside class="rail">
+    <div class="brand"><span>✦</span> manga<br><em>studio</em></div>
+    <button class="new" (click)="state.createProject()">+ New project</button>
+    <p class="label">YOUR PROJECTS</p>
+    <button
+      class="project"
+      *ngFor="let p of state.projects"
+      [class.selected]="p.id === state.workspace.project.id"
+      (click)="state.open(p)">
+      {{p.title}}
+    </button>
+    <div class="rail-foot">
+      ⌘ K &nbsp; Command palette<br>
+      ⌘ S &nbsp; Save document<br>
+      <button class="account" (click)="state.logout()">{{ state.user?.displayName}} · Sign out</button>
+    </div>
+  </aside>
+
+  <!-- Outline & Document Navigation -->
+  <aside class="outline">
+    <header>
+      <span class="eyebrow">PROJECT</span>
+      <h2>{{ state.workspace.project.title}}</h2>
+    </header>
+
+    <section>
+      <div class="section-title">MANUSCRIPT <button (click)="state.addChapter()" title="Add chapter">+</button></div>
+      <ng-container *ngFor="let chapter of state.workspace.chapters">
+        <div class="chapter">⌄ {{chapter.title}}</div>
+        <button
+          class="doc"
+          *ngFor="let d of state.workspace.documents"
+          [class.active]="d.id === state.active?.id"
+          (click)="state.select(d)"
+          [hidden]="d.chapterId !== chapter.id">
+          ↳ {{d.title}}
+        </button>
+      </ng-container>
+    </section>
+
+    <section class="freeform">
+      <div class="section-title">FREE-FORM <button (click)="state.addDocument('NOTE')" title="Add note">+</button></div>
+      <button
+        class="doc"
+        *ngFor="let d of state.otherDocuments()"
+        [class.active]="d.id === state.active?.id"
+        (click)="state.select(d)">
+        <span>{{d.type === 'NOTE' ? '□' : d.type === 'OUTLINE' ? '≡' : '◇'}}</span> {{d.title}}
+      </button>
+      <div class="quick-add">
+        <button (click)="state.addDocument('NOTE')">Note</button>
+        <button (click)="state.addDocument('OUTLINE')">Outline</button>
+        <button (click)="state.addDocument('SCENE')">Scene</button>
+      </div>
+    </section>
+
+    <!-- Atlas & Lore Navigation Shortcuts -->
+    <section class="nav">
+      <div class="section-title">STORY ATLAS</div>
+      <button (click)="state.panel='atlas'; state.atlasFilter='CHARACTER'">◇ Characters ({{state.characterCount()}})</button>
+      <button (click)="state.panel='atlas'; state.atlasFilter='LOCATION'">⌖ Locations ({{state.locationCount()}})</button>
+      <button (click)="state.panel='atlas'; state.atlasFilter='ORGANIZATION'">◈ Organizations ({{state.organizationCount()}})</button>
+      <button (click)="state.panel='atlas'; state.atlasFilter='OBJECT'">⚙ Objects & Concepts ({{state.objectCount()}})</button>
+      <button (click)="state.panel='timeline'">⏳ Timeline ({{ state.timelineEvents.length}} events)</button>
+    </section>
+  </aside>
+
+  <!-- Central Manuscript Editor -->
+  <section class="editor" *ngIf="state.active">
+    <header class="editor-head">
+      <div>
+        <span class="eyebrow">{{ state.active.type}} · DRAFT</span>
+        <input [(ngModel)]="state.active.title" (ngModelChange)="state.queueSave()" aria-label="Document title">
+      </div>
+      <div class="save-state">
+        <button
+          class="continuity-pill"
+          [class.has-issues]="state.continuityNotices.length > 0"
+          (click)="state.panel='timeline'"
+          title="Review non-blocking continuity notices">
+          {{ state.continuityNotices.length ? '⚠ ' + state.continuityNotices.length + ' Notices' : '✓ Continuity Clean'}}
+        </button>
+        {{ state.saving ? 'Saving…' : state.saved || 'All changes saved'}}
+        <button (click)="state.flushSave()">Save</button>
+      </div>
+    </header>
+
+    <textarea
+      [(ngModel)]="state.active.content"
+      (ngModelChange)="state.queueSave()"
+      (select)="state.captureSelection($event)"
+      placeholder="Start writing. Your world can take shape here.">
+    </textarea>
+
+    <footer>
+      <span>{{state.words()}} words</span>
+      <span>Revision {{ state.active.revision}}</span>
+      <span>Creator content</span>
+    </footer>
+  </section>
+
+  <!-- Right Panel: Assistant / Atlas / Timeline / History -->
+  <aside class="right">
+    <header class="state.panel-tabs">
+      <button [class.on]="state.panel==='assistant'" (click)="state.panel='assistant'">✦ Assistant</button>
+      <button [class.on]="state.panel==='atlas'" (click)="state.panel='atlas'">◈ Atlas</button>
+      <button [class.on]="state.panel==='timeline'" (click)="state.panel='timeline'">
+        ⏳ Timeline <span class="tab-badge" *ngIf="state.continuityNotices.length">{{ state.continuityNotices.length}}</span>
+      </button>
+      <button [class.on]="state.panel==='storyboard'" (click)="state.panel='storyboard'">◫ Storyboard</button>
+      <button [class.on]="state.panel==='production'" (click)="state.panel='production'">✒ Production</button>
+      <button [class.on]="state.panel==='publishing'" (click)="state.panel='publishing'">🚀 Publishing</button>
+      <button [class.on]="state.panel==='history'" (click)="state.panel='history'">◷ History</button>
+    </header>
+
+    <!-- TAB 1: ASSISTANT -->
+    <ng-container *ngIf="state.panel==='assistant'">
+      <div class="assistant-intro">
+        <span class="spark">✦</span>
+        <h3>How can I help?</h3>
+        <p>I’ll make suggestions based on your story. You decide what belongs in your canon.</p>
+      </div>
+
+      <div class="actions">
+        <button (click)="state.ask('CONTINUE')">Continue writing scene</button>
+        <button (click)="state.ask('DIALOGUE')">Improve dialogue tension</button>
+        <button (click)="state.ask('BRAINSTORM')">Brainstorm plot twist</button>
+        <button (click)="state.checkSceneContinuity()" [disabled]="state.checkingContinuity">
+          {{ state.checkingContinuity ? 'Scanning scene…' : '⚖ Check scene continuity'}}
+        </button>
+        <button (click)="state.extractMemory()" [disabled]="state.extractingMemory">
+          {{ state.extractingMemory ? 'Extracting story lore…' : '✦ Extract story knowledge'}}
+        </button>
+      </div>
+
+      <article class="state.proposal" *ngIf="state.proposal">
+        <span class="badge">{{ state.proposal.authority}}</span>
+        <p>{{ state.proposal.content}}</p>
+        <small>{{ state.proposal.note}}</small>
+        <div class="state.proposal-actions">
+          <button class="primary" (click)="state.applyProposal()">Apply to editor</button>
+          <button (click)="state.ask('BRAINSTORM')">Regenerate</button>
+        </div>
+      </article>
+
+      <!-- Extracted Knowledge (Pending Creator Approval) -->
+      <div class="memory-card" *ngIf="state.memoryProposals.length">
+        <div class="memory-card-head">
+          <div>
+            <span class="eyebrow-alert">✦ EXTRACTED KNOWLEDGE ({{ state.memoryProposals.length}} PENDING)</span>
+            <p class="memory-card-sub">Review AI proposals. Approve to add directly to your Story Atlas.</p>
+          </div>
+        </div>
+        <div class="memory-list">
+          <div class="memory-item" *ngFor="let p of state.memoryProposals">
+            <div class="memory-item-top">
+              <span class="badge">{{p.suggestedType}}</span>
+              <span class="conf-pill">{{(p.confidence * 100) | number:'1.0-0'}}% confidence</span>
+            </div>
+            <h5 class="memory-name">{{p.name}}</h5>
+            <p class="memory-quote">"{{p.sourceExcerpt}}"</p>
+            <div class="memory-actions">
+              <button class="primary btn-approve" (click)="state.approveMemoryProposal(p)">✓ Approve to Atlas</button>
+              <button class="btn-dismiss" (click)="state.rejectMemoryProposal(p)">✕ Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- TAB 2: STORY ATLAS & CANON CONTROL -->
+    <ng-container *ngIf="state.panel==='atlas'">
+      <!-- Atlas Entry Inspector -->
+      <div class="atlas-inspector" *ngIf="state.selectedEntity; else atlasList">
+        <div class="inspector-top">
+          <button class="back-btn" (click)="state.selectedEntity=undefined">← Back to Atlas</button>
+          <button class="danger-btn" (click)="state.deleteEntity(state.selectedEntity)" title="Delete story entry">Delete</button>
+        </div>
+
+        <div class="inspector-header">
+          <span class="badge">{{ state.selectedEntity.type}}</span>
+          <input class="entity-name-input" [(ngModel)]="state.selectedEntity.name" aria-label="Story entry name">
+          <select class="status-select" [(ngModel)]="state.selectedEntity.status" [attr.data-status]="state.selectedEntity.status">
+            <option value="CANON">CANON</option>
+            <option value="DRAFT">DRAFT</option>
+            <option value="IDEA">IDEA</option>
+            <option value="AI_SUGGESTION">AI_SUGGESTION</option>
+            <option value="UNKNOWN">UNKNOWN</option>
+            <option value="CONTRADICTED">CONTRADICTED</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="card-section">
+          <label class="section-label">OVERVIEW & NOTES</label>
+          <textarea
+            class="clean-textarea"
+            [(ngModel)]="state.selectedEntity.description"
+            rows="3"
+            placeholder="Core summary of this entry in your story world...">
+          </textarea>
+        </div>
+
+        <!-- Source Provenance -->
+        <div class="card-section provenance-card">
+          <label class="section-label">SOURCE PROVENANCE</label>
+          <div class="provenance-field">
+            <span class="sub-label">Linked Manuscript Source:</span>
+            <select [(ngModel)]="state.selectedEntity.sourceDocumentId">
+              <option [ngValue]="undefined">No source document linked</option>
+              <option *ngFor="let doc of state.workspace.documents" [value]="doc.id">{{doc.title}}</option>
+            </select>
+          </div>
+          <div class="provenance-field">
+            <span class="sub-label">Direct Citation / Excerpt:</span>
+            <textarea
+              class="clean-textarea excerpt-box"
+              [(ngModel)]="state.selectedEntity.sourceExcerpt"
+              rows="2"
+              placeholder="Quote or manuscript excerpt establishing this entry (e.g. Chapter 1: 'Ren wore the black sigil')...">
+            </textarea>
+          </div>
+        </div>
+
+        <!-- Rich Character Attributes -->
+        <div class="card-section attributes-card" *ngIf="state.selectedEntity.type === 'CHARACTER'">
+          <label class="section-label">CHARACTER ATTRIBUTES</label>
+          <div class="attribute-grid">
+            <label>Role / Archetype
+              <input [(ngModel)]="state.entityAttributes.role" placeholder="e.g. Protagonist, Rogue Hunter">
+            </label>
+            <label>Appearance
+              <input [(ngModel)]="state.entityAttributes.appearance" placeholder="e.g. Silver hair, amber eyes, long dark coat">
+            </label>
+            <label>Personality Traits
+              <input [(ngModel)]="state.entityAttributes.personality" placeholder="e.g. Stoic, protective, relentlessly observant">
+            </label>
+            <label>Abilities / Powers
+              <input [(ngModel)]="state.entityAttributes.abilities" placeholder="e.g. Shadow manipulation, flash-step">
+            </label>
+            <label>Equipment / Items
+              <input [(ngModel)]="state.entityAttributes.equipment" placeholder="e.g. Obsidian katana, cipher locket">
+            </label>
+          </div>
+        </div>
+
+        <!-- General Attributes (Non-Character) -->
+        <div class="card-section attributes-card" *ngIf="state.selectedEntity.type !== 'CHARACTER'">
+          <label class="section-label">SPECIAL ATTRIBUTES</label>
+          <div class="attribute-grid">
+            <label>Key Characteristic / Role
+              <input [(ngModel)]="state.entityAttributes.role" placeholder="e.g. Imperial Capital, Sacred Artifact">
+            </label>
+            <label>Special Traits / Lore Notes
+              <input [(ngModel)]="state.entityAttributes.notes" placeholder="e.g. Built over volcanic ruins, impenetrable wards">
+            </label>
+          </div>
+        </div>
+
+        <!-- Relationships -->
+        <div class="card-section relationships-card">
+          <label class="section-label">RELATIONSHIPS ({{state.relatedTo(state.selectedEntity).length}})</label>
+          
+          <div class="rel-list" *ngIf="state.relatedTo(state.selectedEntity).length; else noRels">
+            <div class="rel-item" *ngFor="let rel of state.relatedTo(state.selectedEntity)">
+              <div class="rel-details">
+                <span class="rel-partner" (click)="state.jumpToEntity(rel.sourceEntityId === state.selectedEntity.id ? rel.targetEntityId : rel.sourceEntityId)">
+                  {{state.partnerEntityName(rel, state.selectedEntity)}}
+                </span>
+                <span class="rel-type">· {{rel.relationshipType}}</span>
+                <span class="status-pill" [attr.data-status]="rel.status">{{rel.status}}</span>
+              </div>
+              <button class="icon-delete" (click)="state.deleteRelationship(rel.id)" title="Remove relationship">✕</button>
+            </div>
+          </div>
+          <ng-template #noRels>
+            <p class="empty-hint">No relationships established yet.</p>
+          </ng-template>
+
+          <!-- Add Relationship Inline -->
+          <div class="add-rel-box">
+            <div class="add-rel-row">
+              <select [(ngModel)]="state.relationshipTarget">
+                <option value="">Connect with story entry…</option>
+                <option *ngFor="let ent of state.entities" [value]="ent.id" [disabled]="ent.id === state.selectedEntity.id">
+                  {{ent.name}} ({{ent.type}})
+                </option>
+              </select>
+              <input [(ngModel)]="state.relationshipType" placeholder="e.g. ally of, mentor to, sibling of">
+            </div>
+            <div class="add-rel-row">
+              <select [(ngModel)]="state.relationshipStatus">
+                <option value="CANON">CANON</option>
+                <option value="DRAFT">DRAFT</option>
+                <option value="IDEA">IDEA</option>
+                <option value="CONTRADICTED">CONTRADICTED</option>
+              </select>
+              <button class="action-btn" (click)="state.addRelationship()" [disabled]="!state.relationshipTarget || !state.relationshipType.trim()">
+                + Connect
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Linked Timeline Events -->
+        <div class="card-section timeline-link-card">
+          <label class="section-label">TIMELINE APPEARANCES ({{state.eventsForEntity(state.selectedEntity.id).length}})</label>
+          <div class="timeline-sublist" *ngIf="state.eventsForEntity(state.selectedEntity.id).length; else noTimelineLinks">
+            <div class="timeline-subitem" *ngFor="let ev of state.eventsForEntity(state.selectedEntity.id)" (click)="state.panel='timeline'">
+              <span class="ev-order">#{{ev.orderIndex}}</span>
+              <span class="ev-time" *ngIf="ev.storyTime">{{ev.storyTime}}</span>
+              <span class="ev-title">{{ev.title}}</span>
+              <span class="status-pill" [attr.data-status]="ev.status">{{ev.status}}</span>
+            </div>
+          </div>
+          <ng-template #noTimelineLinks>
+            <p class="empty-hint">Not yet linked to any timeline events.</p>
+          </ng-template>
+          <button class="action-btn-outline" (click)="state.openEventModal()">+ Create Event With This Entry</button>
+        </div>
+
+        <!-- Visual References -->
+        <div class="card-section visual-refs-card">
+          <label class="section-label">VISUAL REFERENCES ({{ state.visualReferences.length}})</label>
+          <div class="visual-refs-grid" *ngIf="state.visualReferences.length; else noVisualRefs">
+            <div class="visual-ref-item" *ngFor="let ref of state.visualReferences">
+              <a [href]="ref.filePath" target="_blank" class="ref-link">{{ref.caption || ref.filePath}}</a>
+              <span class="ref-type badge">{{ref.type}}</span>
+              <button class="icon-delete" (click)="state.deleteVisualReference(ref.id)">✕</button>
+            </div>
+          </div>
+          <ng-template #noVisualRefs>
+            <p class="empty-hint">No visual references attached.</p>
+          </ng-template>
+          <div class="add-ref-box">
+            <input #refUrl placeholder="Image URL / Path">
+            <input #refCaption placeholder="Caption">
+            <select #refType>
+              <option value="CHARACTER_SHEET">Character Sheet</option>
+              <option value="EXPRESSION">Expression</option>
+              <option value="LOCATION_MOODBOARD">Location Moodboard</option>
+              <option value="CONCEPT_ART">Concept Art</option>
+            </select>
+            <button class="action-btn" (click)="state.addVisualReference(state.selectedEntity.id, refUrl.value, refCaption.value, refType.value); refUrl.value=''; refCaption.value=''">+ Attach</button>
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="inspector-footer">
+          <button class="primary save-entity-btn" (click)="state.saveEntity()">Save Story Entry</button>
+        </div>
+      </div>
+
+      <!-- Atlas Entry List -->
+      <ng-template #atlasList>
+        <div class="atlas-browser">
+          <div class="atlas-controls">
+            <input class="search-input" [(ngModel)]="state.atlasSearch" placeholder="Search entries, traits, or lore…">
+            <div class="filter-pills">
+              <button [class.active]="state.atlasFilter==='ALL'" (click)="state.atlasFilter='ALL'">All ({{ state.entities.length}})</button>
+              <button [class.active]="state.atlasFilter==='CHARACTER'" (click)="state.atlasFilter='CHARACTER'">Characters</button>
+              <button [class.active]="state.atlasFilter==='LOCATION'" (click)="state.atlasFilter='LOCATION'">Locations</button>
+              <button [class.active]="state.atlasFilter==='ORGANIZATION'" (click)="state.atlasFilter='ORGANIZATION'">Orgs</button>
+              <button [class.active]="state.atlasFilter==='OBJECT'" (click)="state.atlasFilter='OBJECT'">Objects</button>
+              <button [class.active]="state.atlasFilter==='CONCEPT'" (click)="state.atlasFilter='CONCEPT'">Concepts</button>
+            </div>
+            <div class="quick-create-row">
+              <button (click)="state.addEntity('CHARACTER')">+ Character</button>
+              <button (click)="state.addEntity('LOCATION')">+ Location</button>
+              <button (click)="state.addEntity('ORGANIZATION')">+ Org</button>
+              <button (click)="state.addEntity('OBJECT')">+ Object</button>
+              <button (click)="state.addEntity('CONCEPT')">+ Concept</button>
+            </div>
+            <div class="memory-banner" *ngIf="state.memoryProposals.length" (click)="state.panel='assistant'">
+              <span>✦ {{ state.memoryProposals.length}} facts extracted from manuscript. Review in Assistant →</span>
+            </div>
+          </div>
+
+          <div class="entries-scroll">
+            <article
+              class="entity-card"
+              *ngFor="let entity of state.filteredEntities()"
+              (click)="state.editEntity(entity)">
+              <div class="card-head">
+                <span class="badge">{{entity.type}}</span>
+                <span class="status-pill" [attr.data-status]="entity.status">{{entity.status}}</span>
+              </div>
+              <h4>{{entity.name}}</h4>
+              <p class="desc-preview">{{entity.description || 'No description recorded yet.'}}</p>
+              <div class="card-meta">
+                <span *ngIf="entity.sourceDocumentId">↳ {{state.documentTitle(entity.sourceDocumentId)}}</span>
+                <span *ngIf="state.relatedTo(entity).length">✦ {{state.relatedTo(entity).length}} links</span>
+                <span *ngIf="state.eventsForEntity(entity.id).length">⏳ {{state.eventsForEntity(entity.id).length}} events</span>
+              </div>
+            </article>
+
+            <div class="empty-state" *ngIf="!state.filteredEntities().length">
+              <p>No story entries found.</p>
+              <small>Use the buttons above to document characters, locations, factions, and lore.</small>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </ng-container>
+
+    <!-- TAB 3: TIMELINE & CONTINUITY -->
+    <ng-container *ngIf="state.panel==='timeline'">
+      <div class="timeline-view">
+        <div class="timeline-header">
+          <div>
+            <h3>Story Timeline</h3>
+            <p class="subtext">Chronological narrative events and canon continuity.</p>
+          </div>
+          <button class="primary add-event-btn" (click)="state.openEventModal()">+ Add Event</button>
+        </div>
+
+        <!-- Non-Blocking Contradiction & Continuity Review -->
+        <div class="continuity-card" *ngIf="state.continuityNotices.length">
+          <div class="continuity-card-head">
+            <div>
+              <span class="eyebrow-alert">⚠ CONTRADICTION & CONTINUITY REVIEW ({{ state.continuityNotices.length}})</span>
+              <p class="continuity-card-sub">Non-blocking notices. You have final authority over story canon.</p>
+            </div>
+            <button class="action-btn-subtle" (click)="state.loadContinuity()">Re-scan</button>
+          </div>
+
+          <div class="notices-list">
+            <div class="notice-row" *ngFor="let notice of state.continuityNotices">
+              <div class="notice-main">
+                <div class="notice-tags">
+                  <span class="notice-badge">{{notice.type}}</span>
+                  <span class="status-pill" [attr.data-status]="notice.severity === 'WARNING' ? 'CONTRADICTED' : 'AI_SUGGESTION'">{{notice.severity}}</span>
+                </div>
+                <h5>{{notice.title}}</h5>
+                <p>{{notice.description}}</p>
+              </div>
+              <div class="notice-buttons">
+                <button
+                  *ngIf="notice.suggestedResolutions.includes('MARK_CANON')"
+                  class="btn-notice-canon"
+                  (click)="state.resolveNotice(notice, 'MARK_CANON')"
+                  title="Accept as intentional retcon or canon twist">
+                  ✓ Accept as Canon
+                </button>
+                <button
+                  *ngIf="notice.suggestedResolutions.includes('MARK_DRAFT')"
+                  class="btn-notice-draft"
+                  (click)="state.resolveNotice(notice, 'MARK_DRAFT')"
+                  title="Mark entry as draft for revision">
+                  ✎ Move to Draft
+                </button>
+                <button
+                  class="btn-notice-dismiss"
+                  (click)="state.dismissNotice(notice.id)"
+                  title="Dismiss notice without changing canon">
+                  ✕ Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-stream" *ngIf="state.timelineEvents.length; else noEvents">
+          <div class="timeline-card" *ngFor="let ev of state.timelineEvents">
+            <div class="ev-line"></div>
+            <div class="ev-body">
+              <div class="ev-header">
+                <span class="ev-num">#{{ev.orderIndex}}</span>
+                <span class="ev-time-badge" *ngIf="ev.storyTime">{{ev.storyTime}}</span>
+                <span class="status-pill" [attr.data-status]="ev.status">{{ev.status}}</span>
+                <div class="ev-actions">
+                  <button (click)="state.openEventModal(ev)" title="Edit event">✎</button>
+                  <button (click)="state.deleteTimelineEvent(ev.id)" title="Delete event">✕</button>
+                </div>
+              </div>
+              <h4 class="ev-title-text">{{ev.title}}</h4>
+              <p class="ev-desc-text" *ngIf="ev.description">{{ev.description}}</p>
+              <div class="ev-provenance" *ngIf="ev.sourceDocumentId">
+                <span>Source: {{state.documentTitle(ev.sourceDocumentId)}}</span>
+              </div>
+              <div class="ev-entities" *ngIf="ev.entityIds && ev.entityIds.length">
+                <span
+                  class="entity-chip"
+                  *ngFor="let eid of ev.entityIds"
+                  (click)="state.jumpToEntity(eid)">
+                  ◇ {{state.entityName(eid)}}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ng-template #noEvents>
+          <div class="empty-state">
+            <p>No timeline events yet.</p>
+            <small>Establish key narrative milestones, battles, reveals, and character encounters.</small>
+            <button class="primary mt-3" (click)="state.openEventModal()">+ Create First Event</button>
+          </div>
+        </ng-template>
+      </div>
+    </ng-container>
+
+    <!-- TAB 4: DOCUMENT HISTORY -->
+    <ng-container *ngIf="state.panel==='history'">
+      <div class="history-view">
+        <p class="history-note">Every save creates an immutable, restorable snapshot.</p>
+        <article class="version" *ngFor="let v of state.versions">
+          <b>Revision {{v.revision}}</b>
+          <span>{{v.createdAt | date:'medium'}}</span>
+          <button (click)="state.restore(v)">Restore</button>
+        </article>
+      </div>
+    </ng-container>
+
+    <!-- TAB 5: STORYBOARD -->
+    <ng-container *ngIf="state.panel==='storyboard'">
+      <div class="storyboard-view">
+        <div class="storyboard-header">
+          <div>
+            <h3>Scene Planning</h3>
+            <p class="subtext" *ngIf="state.active?.chapterId">Storyboard panels for "{{ state.active?.title}}"</p>
+            <p class="subtext" *ngIf="!state.active?.chapterId">Select a chapter document to plan scenes.</p>
+          </div>
+        </div>
+
+        <div *ngIf="state.active?.chapterId; else noStoryboard">
+          <div class="state.scenes-list">
+            <div class="scene-item" *ngFor="let scene of state.scenes; let i = index">
+              <div class="scene-head">
+                <h4>Scene {{i + 1}}</h4>
+                <p>{{scene.description}}</p>
+                <button class="icon-delete" (click)="state.deleteScene(state.active!.chapterId!, scene.id)">✕</button>
+              </div>
+
+              <!-- Panels for Scene -->
+              <div class="panels-grid">
+                <div class="state.panel-card" *ngFor="let panel of state.panelsByScene[scene.id]; let pIdx = index">
+                  <div class="state.panel-head">
+                    <span class="badge">Panel {{pIdx + 1}}</span>
+                    <button class="icon-delete" (click)="state.deletePanel(state.active!.chapterId!, scene.id, panel.id)">✕</button>
+                  </div>
+                  <div class="state.panel-body">
+                    <strong>Visual:</strong> {{ panel.visualPrompt}}
+                    <br>
+                    <strong *ngIf="panel.dialogue">Dialogue:</strong> {{ panel.dialogue}}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add Panel -->
+              <div class="add-panel-box">
+                <input #panelVisual placeholder="Visual Prompt...">
+                <input #panelDialogue placeholder="Dialogue (optional)...">
+                <button class="action-btn" (click)="state.addPanel(scene.id, state.active!.chapterId!, panelVisual.value, panelDialogue.value); panelVisual.value=''; panelDialogue.value=''">+ Panel</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="add-scene-box">
+            <textarea #sceneDesc class="clean-textarea" rows="2" placeholder="Describe a new scene..."></textarea>
+            <button class="primary" (click)="state.addScene(state.active!.chapterId!, sceneDesc.value); sceneDesc.value=''">+ Add Scene</button>
+          </div>
+        </div>
+        <ng-template #noStoryboard>
+          <div class="empty-state">
+            <p>Storyboards belong to chapters.</p>
+            <small>Select a chapter manuscript from the Outline to start planning panels.</small>
+          </div>
+        </ng-template>
+      </div>
+    </ng-container>
+    <!-- TAB 6: MANGA PRODUCTION -->
+    <ng-container *ngIf="state.panel==='production'">
+      <div class="production-view">
+        <div class="production-header">
+          <div>
+            <h3>Manga Creation</h3>
+            <p class="subtext" *ngIf="state.active?.chapterId">Page layouts & composition for "{{ state.active?.title}}"</p>
+            <p class="subtext" *ngIf="!state.active?.chapterId">Select a chapter manuscript to edit pages.</p>
+          </div>
+        </div>
+
+        <div *ngIf="state.active?.chapterId; else noProduction">
+          <!-- Page Browser (Grid of pages) -->
+          <div class="page-browser" *ngIf="!state.selectedPage">
+            <div class="page-grid">
+              <div class="page-thumb" *ngFor="let page of state.mangaPages" (click)="state.selectMangaPage(page, state.active!.chapterId!)">
+                <span class="page-num">Pg {{page.pageNumber}}</span>
+                <span class="page-layout">{{page.layoutType}}</span>
+                <button class="icon-delete top-right" (click)="state.deleteMangaPage(state.active!.chapterId!, page.id); $event.stopPropagation()">✕</button>
+              </div>
+              <div class="page-thumb add-page" (click)="state.addMangaPage(state.active!.chapterId!)">
+                <span class="plus-icon">+</span>
+                <span>Add Page</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Page Composition Editor -->
+          <div class="page-editor" *ngIf="state.selectedPage">
+            <div class="editor-top-bar">
+              <button class="back-btn" (click)="state.selectedPage = undefined">← Back to Pages</button>
+              <h4>Page {{state.selectedPage.pageNumber}}</h4>
+            </div>
+            
+            <div class="canvas-container">
+              <div class="manga-canvas">
+                <!-- Render Assets using DOM absolute positioning -->
+                <div class="manga-asset" *ngFor="let asset of state.mangaAssetsByPage[state.selectedPage.id]"
+                     [style.left.px]="asset.posX"
+                     [style.top.px]="asset.posY"
+                     [style.width.px]="asset.width"
+                     [style.height.px]="asset.height"
+                     [style.z-index]="asset.zIndex">
+                  
+                  <div class="asset-controls">
+                    <span class="badge">{{asset.assetType}}</span>
+                    <button class="icon-delete" (click)="state.deleteMangaAsset(state.active!.chapterId!, state.selectedPage.id, asset.id)">✕</button>
+                  </div>
+                  
+                  <!-- Render Content -->
+                  <img *ngIf="asset.assetType === 'PANEL_IMAGE' || asset.assetType === 'BACKGROUND' || asset.assetType === 'CHARACTER_LAYER'" 
+                       [src]="asset.fileUrl" class="asset-img" alt="Manga Asset"
+                       (error)="asset.fileUrl = 'assets/placeholder.png'">
+                       
+                  <div class="bubble-content" *ngIf="asset.assetType === 'SPEECH_BUBBLE'">
+                    {{asset.fileUrl}}
+                  </div>
+
+                  <div class="sfx-content" *ngIf="asset.assetType === 'SFX'">
+                    {{asset.fileUrl}}
+                  </div>
+                  
+                  <!-- Position Adjusters -->
+                  <div class="asset-adjusters">
+                    <input type="number" [(ngModel)]="asset.posX" (change)="state.updateMangaAsset(state.active!.chapterId!, asset)" title="X">
+                    <input type="number" [(ngModel)]="asset.posY" (change)="state.updateMangaAsset(state.active!.chapterId!, asset)" title="Y">
+                    <input type="number" [(ngModel)]="asset.width" (change)="state.updateMangaAsset(state.active!.chapterId!, asset)" title="W">
+                    <input type="number" [(ngModel)]="asset.height" (change)="state.updateMangaAsset(state.active!.chapterId!, asset)" title="H">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Asset Toolkit -->
+            <div class="asset-toolkit">
+              <h5>Add Asset to Page</h5>
+              <div class="add-asset-box">
+                <select #newAssetType>
+                  <option value="PANEL_IMAGE">Panel Image</option>
+                  <option value="SPEECH_BUBBLE">Speech Bubble</option>
+                  <option value="CHARACTER_LAYER">Character Layer</option>
+                  <option value="BACKGROUND">Background</option>
+                  <option value="SFX">Sound Effect</option>
+                </select>
+                <input #newAssetUrl placeholder="Image URL or text...">
+                <button class="primary" (click)="state.addMangaAsset(state.active!.chapterId!, state.selectedPage.id, newAssetType.value, newAssetUrl.value); newAssetUrl.value=''">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <ng-template #noProduction>
+          <div class="empty-state">
+            <p>Manga production happens at the chapter level.</p>
+            <small>Select a chapter manuscript from the Outline to start laying out pages.</small>
+          </div>
+        </ng-template>
+      </div>
+    </ng-container>
+
+    <!-- TAB 7: PUBLISHING -->
+    <ng-container *ngIf="state.panel==='publishing'">
+      <div class="publishing-view">
+        <div class="publishing-header">
+          <h3>Publishing & Creator Tools</h3>
+        </div>
+
+        <!-- Creator Profile Settings -->
+        <div class="publishing-card" *ngIf="state.creatorProfile">
+          <h4>Creator Profile</h4>
+          <div class="profile-form">
+            <label>Pen Name</label>
+            <input type="text" [(ngModel)]="state.creatorProfile.penName">
+            
+            <label>Bio</label>
+            <textarea rows="3" class="clean-textarea" [(ngModel)]="state.creatorProfile.bio"></textarea>
+            
+            <label>Avatar URL</label>
+            <input type="text" [(ngModel)]="state.creatorProfile.avatarUrl" placeholder="https://...">
+
+            <button class="action-btn" (click)="state.updateCreatorProfile(state.creatorProfile.penName, state.creatorProfile.bio, state.creatorProfile.avatarUrl)">Save Profile</button>
+          </div>
+        </div>
+
+        <!-- Project Visibility -->
+        <div class="publishing-card" *ngIf="state.projectPublishing">
+          <h4>Project Settings</h4>
+          <div class="visibility-form">
+            <label>Visibility</label>
+            <select [(ngModel)]="state.projectPublishing.visibility" (change)="state.updateProjectPublishing(state.projectPublishing.visibility, state.projectPublishing.tags)">
+              <option value="PRIVATE">Private (Only me)</option>
+              <option value="UNLISTED">Unlisted (Anyone with link)</option>
+              <option value="PUBLIC">Public (Listed on reader)</option>
+            </select>
+            
+            <label>Tags</label>
+            <input type="text" [(ngModel)]="state.projectPublishing.tags" (blur)="state.updateProjectPublishing(state.projectPublishing.visibility, state.projectPublishing.tags)" placeholder="e.g. fantasy, action, romance">
+          </div>
+        </div>
+
+        <!-- Chapter Release -->
+        <div class="publishing-card chapter-release-card" *ngIf="state.active?.chapterId">
+          <h4>Chapter Release: "{{ state.active?.title}}"</h4>
+          
+          <div class="release-status" *ngIf="state.chapterRelease">
+            <div class="status-indicator" [class.published]="state.chapterRelease.status === 'PUBLISHED'">
+              <span class="status-dot"></span>
+              <strong>{{ state.chapterRelease.status}}</strong>
+            </div>
+            
+            <p class="release-date" *ngIf="state.chapterRelease.publishedAt">
+              Published on: {{ state.chapterRelease.publishedAt | date:'medium'}}
+            </p>
+            
+            <button class="primary publish-btn" *ngIf="state.chapterRelease.status !== 'PUBLISHED'" (click)="state.publishChapter(state.active!.chapterId!)">
+              Publish Chapter Now
+            </button>
+          </div>
+
+          <!-- Analytics -->
+          <div class="analytics-dashboard" *ngIf="state.chapterAnalytics && state.chapterRelease?.status === 'PUBLISHED'">
+            <h5>Analytics</h5>
+            <div class="metrics-grid">
+              <div class="metric-box">
+                <span class="metric-val">{{ state.chapterAnalytics.views | number}}</span>
+                <span class="metric-label">Views</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-val">{{ state.chapterAnalytics.likes | number}}</span>
+                <span class="metric-label">Likes</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-val">{{ state.chapterAnalytics.commentsCount | number}}</span>
+                <span class="metric-label">Comments</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="empty-state" *ngIf="!state.active?.chapterId">
+          <p>Select a chapter to manage its release and view analytics.</p>
+        </div>
+
+      </div>
+    </ng-container>
+  </aside>
+</main>
+
+<!-- Timeline Event Modal / Dialog -->
+<div class="modal-backdrop" *ngIf="state.eventModalOpen">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>{{ state.editingEvent ? 'Edit Story Event' : 'New Timeline Event'}}</h3>
+      <button class="modal-close" (click)="state.closeEventModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="state.saveTimelineEvent()" class="event-form">
+      <label>Event Title
+        <input [(ngModel)]="state.eventForm.title" name="title" required placeholder="e.g. The Awakening at Mount Ren">
+      </label>
+
+      <div class="form-row">
+        <label>Story Time / Era
+          <input [(ngModel)]="state.eventForm.storyTime" name="storyTime" placeholder="e.g. Year 104, Pre-Calamity, Dawn">
+        </label>
+        <label>Order Index
+          <input type="number" [(ngModel)]="state.eventForm.orderIndex" name="orderIndex">
+        </label>
+        <label>Canon Status
+          <select [(ngModel)]="state.eventForm.status" name="status">
+            <option value="CANON">CANON</option>
+            <option value="DRAFT">DRAFT</option>
+            <option value="IDEA">IDEA</option>
+            <option value="CONTRADICTED">CONTRADICTED</option>
+          </select>
+        </label>
+      </div>
+
+      <label>Linked Manuscript Document (Source Provenance)
+        <select [(ngModel)]="state.eventForm.sourceDocumentId" name="sourceDocumentId">
+          <option [ngValue]="undefined">No source linked</option>
+          <option *ngFor="let doc of state.workspace?.documents" [value]="doc.id">{{doc.title}}</option>
+        </select>
+      </label>
+
+      <label>Description / Narrative Summary
+        <textarea [(ngModel)]="state.eventForm.description" name="description" rows="3" placeholder="What occurs during this event? Key revelations, actions, or conflicts..."></textarea>
+      </label>
+
+      <div class="entity-picker">
+        <span class="sub-label">Participating Story Entries:</span>
+        <div class="entity-chips-select">
+          <span
+            class="picker-chip"
+            *ngFor="let ent of state.entities"
+            [class.selected]="state.isEntityLinkedToForm(ent.id)"
+            (click)="state.toggleEventEntity(ent.id)">
+            {{state.isEntityLinkedToForm(ent.id) ? '✓' : '+'}} {{ent.name}}
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="state.closeEventModal()">Cancel</button>
+        <button type="submit" class="primary" [disabled]="!state.eventForm.title.trim()">
+          {{ state.editingEvent ? 'Update Event' : 'Create Event'}}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Welcome & Auth Screen -->
+<ng-template #welcome>
+  <section class="welcome">
+    <div class="brand"><span>✦</span> manga <em>studio</em></div>
+    <h1>Your story starts<br>wherever you do.</h1>
+    <p>Welcome, {{ state.user?.displayName}}. Free-form writing, thoughtful structure, and canon control.</p>
+    <button class="new" (click)="state.createProject()">Create your first project</button>
+    <button class="signout" (click)="state.logout()">Sign out</button>
+  </section>
+</ng-template>

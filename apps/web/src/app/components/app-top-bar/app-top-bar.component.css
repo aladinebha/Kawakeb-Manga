@@ -1,0 +1,45 @@
+.global-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(24, 22, 20, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+.global-top-bar .brand {
+  font: 300 18px Georgia, serif;
+}
+.global-top-bar .brand .light {
+  color: #b7afa5;
+  font-style: italic;
+}
+.mode-toggles {
+  display: flex;
+  gap: 8px;
+}
+.mode-toggles button {
+  background: transparent;
+  color: #b7afa5;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.mode-toggles button:hover {
+  color: #fff;
+  background: #2a2825;
+}
+.mode-toggles button.active {
+  color: #fff;
+  background: #ea734d;
+  font-weight: 600;
+}

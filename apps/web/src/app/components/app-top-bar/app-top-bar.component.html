@@ -1,0 +1,7 @@
+<div class="global-top-bar">
+  <div class="brand">✦ Manga<span class="light">verse</span></div>
+  <div class="mode-toggles">
+    <button [class.active]="state.viewMode === 'reader'" (click)="state.toggleViewMode()">Discovery</button>
+    <button [class.active]="state.viewMode === 'studio'" (click)="state.toggleViewMode()">Creator Studio</button>
+  </div>
+</div>

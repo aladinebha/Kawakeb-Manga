@@ -1,0 +1,85 @@
+    <main class="reader-platform">
+      
+      <!-- Discovery View -->
+      <div *ngIf="!state.activeReaderProject" class="discovery-view">
+        <h2>Discover New Worlds</h2>
+        <div class="project-grid">
+          <div class="project-card" *ngFor="let p of state.publicProjects" (click)="state.openReaderProject(p)">
+            <div class="cover-placeholder">📖</div>
+            <h4>{{p.title}}</h4>
+            <p class="desc">{{p.description}}</p>
+            <button class="action-btn" (click)="$event.stopPropagation(); state.toggleBookmark(p.id)">
+              {{ state.isBookmarked(p.id) ? '★ Bookmarked' : '☆ Bookmark' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reader View -->
+      <div *ngIf="state.activeReaderProject" class="reader-view">
+        <div class="reader-nav">
+          <button class="back-btn" (click)="state.activeReaderProject = undefined">← Back to Discovery</button>
+          <h3>{{ state.activeReaderProject.title}}</h3>
+        </div>
+
+        <!-- Chapters List -->
+        <div class="chapters-list" *ngIf="!state.activeReaderChapter">
+          <h4>Chapters</h4>
+          <div class="chapter-item" *ngFor="let c of state.readerChapters" (click)="state.readChapter(c)">
+            <span>{{c.title}}</span>
+            <button class="primary">Read</button>
+          </div>
+          <div class="empty-state" *ngIf="state.readerChapters.length === 0">No chapters published yet.</div>
+        </div>
+
+        <!-- Reading Pane -->
+        <div class="reading-pane" *ngIf="state.activeReaderChapter">
+          <div class="reader-actions">
+            <button class="back-btn" (click)="state.activeReaderChapter = undefined">← Chapters</button>
+            <h4>{{ state.activeReaderChapter.title}}</h4>
+          </div>
+
+          <!-- Page Viewer -->
+          <div class="page-viewer">
+            <div class="manga-page" *ngFor="let page of state.readerPages">
+              <div class="manga-canvas read-only">
+                <div *ngFor="let asset of state.readerAssets" 
+                     [hidden]="asset.pageId !== page.id"
+                     class="asset-element {{asset.assetType | lowercase}}"
+                     [style.left.px]="asset.posX"
+                     [style.top.px]="asset.posY"
+                     [style.width.px]="asset.width"
+                     [style.height.px]="asset.height"
+                     [style.z-index]="asset.zIndex">
+                  
+                  <img *ngIf="asset.assetType === 'PANEL_IMAGE' || asset.assetType === 'CHARACTER' || asset.assetType === 'BACKGROUND'" 
+                       [src]="asset.fileUrl" alt="">
+                  
+                  <div class="bubble-text" *ngIf="asset.assetType === 'SPEECH_BUBBLE'">{{asset.fileUrl}}</div>
+                  <div class="sfx-text" *ngIf="asset.assetType === 'SFX'">{{asset.fileUrl}}</div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="state.readerPages.length === 0" class="empty-state">This chapter has no pages yet.</div>
+          </div>
+
+          <!-- Comments Section -->
+          <div class="comments-section">
+            <h4>Comments ({{ state.readerComments.length}})</h4>
+            <div class="comment-list">
+              <div class="comment" *ngFor="let comment of state.readerComments">
+                <div class="comment-header">
+                  <strong>Reader</strong>
+                  <span class="date">{{comment.createdAt | date:'short'}}</span>
+                </div>
+                <p>{{comment.content}}</p>
+              </div>
+            </div>
+            <div class="add-comment">
+              <textarea #commentInput placeholder="What did you think of this chapter?" rows="3" class="clean-textarea"></textarea>
+              <button class="primary" (click)="state.addComment(state.activeReaderChapter.chapterId!, commentInput.value); commentInput.value=''">Post Comment</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
