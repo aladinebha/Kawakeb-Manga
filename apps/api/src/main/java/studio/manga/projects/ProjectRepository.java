@@ -1,0 +1,1 @@
+package studio.manga.projects; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; public interface ProjectRepository extends JpaRepository<Project,UUID>{ List<Project> findByOwnerIdOrderByUpdatedAtDesc(UUID ownerId); Optional<Project> findByIdAndOwnerId(UUID id,UUID ownerId); }

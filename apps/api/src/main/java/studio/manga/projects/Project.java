@@ -1,0 +1,3 @@
+package studio.manga.projects;
+import jakarta.persistence.*; import java.time.Instant; import java.util.UUID;
+@Entity @Table(name="project") public class Project { @Id public UUID id=UUID.randomUUID(); @Column(name="owner_id",nullable=false) public UUID ownerId; @Column(nullable=false) public String title; @Column(nullable=false) public String description=""; @Column(nullable=false) public String status="DRAFT"; @Column(name="created_at",nullable=false) public Instant createdAt=Instant.now(); @Column(name="updated_at",nullable=false) public Instant updatedAt=Instant.now(); protected Project(){} public Project(UUID ownerId,String title,String description){this.ownerId=ownerId;this.title=title;this.description=description==null?"":description;} }

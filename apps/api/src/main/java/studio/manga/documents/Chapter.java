@@ -1,0 +1,3 @@
+package studio.manga.documents;
+import jakarta.persistence.*; import java.time.Instant; import java.util.UUID;
+@Entity @Table(name="chapter") public class Chapter { @Id public UUID id=UUID.randomUUID(); @Column(name="project_id",nullable=false) public UUID projectId; @Column(nullable=false) public String title; @Column(nullable=false) public int position; @Column(nullable=false) public String status="DRAFT"; @Column(name="created_at",nullable=false) public Instant createdAt=Instant.now(); @Column(name="updated_at",nullable=false) public Instant updatedAt=Instant.now(); protected Chapter(){} public Chapter(UUID projectId,String title,int position){this.projectId=projectId;this.title=title;this.position=position;} }

@@ -1,0 +1,13 @@
+spring:
+  application.name: manga-studio-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/mangastudio}
+    username: ${SPRING_DATASOURCE_USERNAME:manga}
+    password: ${SPRING_DATASOURCE_PASSWORD:manga}
+  jpa:
+    open-in-view: false
+    hibernate.ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+app:
+  cors-origins: ${APP_CORS_ORIGINS:http://localhost:4200}

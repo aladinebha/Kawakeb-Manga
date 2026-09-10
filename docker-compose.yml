@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mangastudio
+      POSTGRES_USER: manga
+      POSTGRES_PASSWORD: manga
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U manga -d mangastudio"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+  api:
+    build: ./apps/api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/mangastudio
+      SPRING_DATASOURCE_USERNAME: manga
+      SPRING_DATASOURCE_PASSWORD: manga
+      APP_CORS_ORIGINS: http://localhost:4200
+    ports: ["8080:8080"]
+    depends_on:
+      db: { condition: service_healthy }
+  web:
+    build: ./apps/web
+    ports: ["4200:80"]
+    depends_on: [api]
+volumes:
+  postgres-data:

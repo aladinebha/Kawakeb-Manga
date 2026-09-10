@@ -1,0 +1,3 @@
+package studio.manga.documents;
+import jakarta.persistence.*; import java.time.Instant; import java.util.UUID;
+@Entity @Table(name="document_version") public class DocumentVersion { @Id public UUID id=UUID.randomUUID(); @Column(name="document_id",nullable=false) public UUID documentId; @Column(nullable=false) public int revision; @Column(nullable=false) public String title; @Column(nullable=false) public String content; @Column(name="created_by",nullable=false) public String createdBy="CREATOR"; @Column(name="created_at",nullable=false) public Instant createdAt=Instant.now(); protected DocumentVersion(){} public DocumentVersion(Document d){documentId=d.id;revision=d.revision;title=d.title;content=d.content;} }
