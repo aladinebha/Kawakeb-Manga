@@ -127,6 +127,9 @@
         <button (click)="checkSceneContinuity()" [disabled]="checkingContinuity">
           {{checkingContinuity ? 'Scanning scene…' : '⚖ Check scene continuity'}}
         </button>
+        <button (click)="extractMemory()" [disabled]="extractingMemory">
+          {{extractingMemory ? 'Extracting story lore…' : '✦ Extract story knowledge'}}
+        </button>
       </div>
 
       <article class="proposal" *ngIf="proposal">
@@ -138,6 +141,30 @@
           <button (click)="ask('BRAINSTORM')">Regenerate</button>
         </div>
       </article>
+
+      <!-- Extracted Knowledge (Pending Creator Approval) -->
+      <div class="memory-card" *ngIf="memoryProposals.length">
+        <div class="memory-card-head">
+          <div>
+            <span class="eyebrow-alert">✦ EXTRACTED KNOWLEDGE ({{memoryProposals.length}} PENDING)</span>
+            <p class="memory-card-sub">Review AI proposals. Approve to add directly to your Story Atlas.</p>
+          </div>
+        </div>
+        <div class="memory-list">
+          <div class="memory-item" *ngFor="let p of memoryProposals">
+            <div class="memory-item-top">
+              <span class="badge">{{p.suggestedType}}</span>
+              <span class="conf-pill">{{(p.confidence * 100) | number:'1.0-0'}}% confidence</span>
+            </div>
+            <h5 class="memory-name">{{p.name}}</h5>
+            <p class="memory-quote">"{{p.sourceExcerpt}}"</p>
+            <div class="memory-actions">
+              <button class="primary btn-approve" (click)="approveMemoryProposal(p)">✓ Approve to Atlas</button>
+              <button class="btn-dismiss" (click)="rejectMemoryProposal(p)">✕ Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </ng-container>
 
     <!-- TAB 2: STORY ATLAS & CANON CONTROL -->
@@ -316,6 +343,9 @@
               <button (click)="addEntity('ORGANIZATION')">+ Org</button>
               <button (click)="addEntity('OBJECT')">+ Object</button>
               <button (click)="addEntity('CONCEPT')">+ Concept</button>
+            </div>
+            <div class="memory-banner" *ngIf="memoryProposals.length" (click)="panel='assistant'">
+              <span>✦ {{memoryProposals.length}} facts extracted from manuscript. Review in Assistant →</span>
             </div>
           </div>
 

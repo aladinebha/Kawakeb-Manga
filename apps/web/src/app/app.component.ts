@@ -56,6 +56,29 @@ export type ContinuityNotice = {
   documentId?: string;
   suggestedResolutions: string[];
 };
+export type MemoryProposal = {
+  id: string;
+  projectId: string;
+  sourceDocumentId: string;
+  targetType: string;
+  name: string;
+  suggestedType: string;
+  suggestedDetails: string;
+  sourceExcerpt: string;
+  confidence: number;
+  status: string;
+  createdAt: string;
+};
+export type SemanticMemoryChunk = {
+  id: string;
+  projectId: string;
+  sourceDocumentId?: string;
+  chunkType: string;
+  title: string;
+  content: string;
+  tags: string;
+  authority: string;
+};
 export type Workspace = { project: Project; chapters: Chapter[]; documents: Document[] };
 export type Version = { id: string; revision: number; content: string; createdAt: string };
 export type Proposal = { content: string; authority: string; note: string };
@@ -148,6 +171,10 @@ export class AppComponent implements OnInit, OnDestroy {
   continuityNotices: ContinuityNotice[] = [];
   checkingContinuity = false;
 
+  // Memory State
+  memoryProposals: MemoryProposal[] = [];
+  extractingMemory = false;
+
   ngOnInit() {
     this.http.get<User>('/api/auth/me').subscribe({
       next: user => {
@@ -221,6 +248,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.loadRelationships();
       this.loadTimeline();
       this.loadContinuity();
+      this.loadMemoryProposals();
       this.proposal = undefined;
       this.selectedEntity = undefined;
     });
@@ -622,6 +650,69 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe(notices => {
         this.continuityNotices = notices;
+      });
+  }
+
+  // --- AI Memory Operations ---
+
+  loadMemoryProposals() {
+    if (this.workspace) {
+      this.http
+        .get<MemoryProposal[]>(`/api/projects/${this.workspace.project.id}/memory/proposals`)
+        .subscribe(items => {
+          this.memoryProposals = items.filter(p => p.status === 'PENDING');
+        });
+    }
+  }
+
+  extractMemory() {
+    if (!this.workspace || !this.active) return;
+    this.extractingMemory = true;
+    this.panel = 'assistant';
+    this.http
+      .post<MemoryProposal[]>(
+        `/api/projects/${this.workspace.project.id}/memory/extract`,
+        { documentId: this.active.id }
+      )
+      .subscribe({
+        next: proposals => {
+          this.extractingMemory = false;
+          this.loadMemoryProposals();
+          this.proposal = {
+            authority: 'AI_SUGGESTION',
+            content: `Structured Knowledge Extraction complete for "${this.active?.title}":\n\nDiscovered ${proposals.length} candidate story entries with source citations. Review and approve them below to add them to your canon Story Atlas.`,
+            note: 'Probabilistic extraction only. You decide what becomes canon.'
+          };
+        },
+        error: () => (this.extractingMemory = false)
+      });
+  }
+
+  approveMemoryProposal(p: MemoryProposal) {
+    if (!this.workspace) return;
+    this.http
+      .post<MemoryProposal>(
+        `/api/projects/${this.workspace.project.id}/memory/proposals/${p.id}/approve`,
+        {}
+      )
+      .subscribe(() => {
+        this.memoryProposals = this.memoryProposals.filter(item => item.id !== p.id);
+        this.loadEntities();
+        this.loadRelationships();
+        this.loadTimeline();
+        this.loadContinuity();
+      });
+  }
+
+  rejectMemoryProposal(p: MemoryProposal) {
+    if (!this.workspace) return;
+    this.http
+      .post<MemoryProposal>(
+        `/api/projects/${this.workspace.project.id}/memory/proposals/${p.id}/reject`,
+        {}
+      )
+      .subscribe(() => {
+        this.memoryProposals = this.memoryProposals.filter(item => item.id !== p.id);
       });
   }
 

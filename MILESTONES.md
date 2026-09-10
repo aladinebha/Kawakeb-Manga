@@ -26,9 +26,13 @@
 * Automated continuity engine detecting contradicted entries, conflicting relationships, chronological ambiguities, and scene text lore conflicts
 * Non-blocking contradiction review panel with creator resolution workflows (accept into canon, move to draft, or dismiss)
 
-## 4. AI memory — planned
+## 4. AI memory — complete
 
-Structured extraction with creator approval, source provenance, retrieval-ready semantic memory, and continuity assistance.
+* Structured extraction engine analyzing manuscript scenes for candidate entities, lore, and traits with exact sentence citations and confidence scores
+* Explicit creator approval workflow: extracted facts remain pending until approved into the Story Atlas
+* Layer 4 retrieval-ready semantic memory chunks with automated scene chunking and indexing
+* Hybrid context retrieval combining structured canon entities, relationships, and timeline events with semantic chunks
+* Memory-grounded AI proposals citing referenced Story Atlas knowledge
 
 ## 5. Visual pre-production — planned
 
