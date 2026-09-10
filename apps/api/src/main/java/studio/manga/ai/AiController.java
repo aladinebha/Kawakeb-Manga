@@ -20,12 +20,15 @@ public class AiController {
 
     @PostMapping("/generate-image")
     public Map<String, String> generateImage(@PathVariable UUID projectId, @RequestBody ImageGenerationInput in) {
-        // Vertex AI / Imagen integration would go here.
-        // For now, since Gemini 2.5 Flash doesn't return raw images and Imagen requires Vertex SDK,
-        // we return a placeholder URL simulating the AI generating an image.
-        String dummyUrl = "https://placehold.co/600x400/222222/cccccc.png?text=AI+Generated+Image\\n" 
-                + in.prompt().replaceAll(" ", "+");
-        return Map.of("url", dummyUrl);
+        // Enforce manga style in the prompt
+        String mangaStylePrompt = "black and white manga style, ink pen, screentone, monochrome line art, anime style, " 
+                                + in.prompt();
+        
+        // Pollinations.ai provides a free, open image generation endpoint
+        String encodedPrompt = java.net.URLEncoder.encode(mangaStylePrompt, java.nio.charset.StandardCharsets.UTF_8);
+        String imageUrl = "https://image.pollinations.ai/prompt/" + encodedPrompt + "?width=800&height=1200&nologo=true";
+        
+        return Map.of("url", imageUrl);
     }
 
     public record ProposalInput(String action, String selectedText, String instruction) {}
