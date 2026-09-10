@@ -108,6 +108,26 @@ export type PanelProposal = {
   status: string;
   createdAt: string;
 };
+export type MangaPage = {
+  id: string;
+  chapterId: string;
+  pageNumber: number;
+  layoutType: string;
+  status: string;
+  createdAt: string;
+};
+export type MangaAsset = {
+  id: string;
+  pageId: string;
+  assetType: string;
+  fileUrl: string;
+  posX: number;
+  posY: number;
+  width: number;
+  height: number;
+  zIndex: number;
+  createdAt: string;
+};
 
 @Component({
   selector: 'app-root',
@@ -136,8 +156,8 @@ export class AppComponent implements OnInit, OnDestroy {
   saving = false;
   saved = '';
 
-  // Panels: assistant | atlas | timeline | history | storyboard
-  panel: 'assistant' | 'atlas' | 'timeline' | 'history' | 'storyboard' = 'assistant';
+  // Panels: assistant | atlas | timeline | history | storyboard | production
+  panel: 'assistant' | 'atlas' | 'timeline' | 'history' | 'storyboard' | 'production' = 'assistant';
 
   // Story Atlas State
   entities: StoryEntity[] = [];
@@ -205,6 +225,11 @@ export class AppComponent implements OnInit, OnDestroy {
   visualReferences: VisualReference[] = [];
   scenes: Scene[] = [];
   panelsByScene: Record<string, PanelProposal[]> = {};
+
+  // Manga Production State
+  mangaPages: MangaPage[] = [];
+  mangaAssetsByPage: Record<string, MangaAsset[]> = {};
+  selectedPage?: MangaPage;
 
   ngOnInit() {
     this.http.get<User>('/api/auth/me').subscribe({
@@ -282,6 +307,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.loadMemoryProposals();
       this.proposal = undefined;
       this.selectedEntity = undefined;
+      this.selectedPage = undefined;
     });
   }
 
@@ -291,6 +317,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.history();
     this.proposal = undefined;
     this.selectedText = '';
+    
+    if (d.chapterId) {
+      this.loadMangaPages(d.chapterId);
+    }
   }
 
   addChapter() {
@@ -838,6 +868,86 @@ export class AppComponent implements OnInit, OnDestroy {
       .delete(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/storyboard/panels/${panelId}`)
       .subscribe(() => {
         this.panelsByScene[sceneId] = (this.panelsByScene[sceneId] || []).filter(p => p.id !== panelId);
+      });
+  }
+
+  // --- Manga Production ---
+
+  loadMangaPages(chapterId: string) {
+    if (!this.workspace) return;
+    this.http
+      .get<MangaPage[]>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/production/pages`)
+      .subscribe(pages => {
+        this.mangaPages = pages;
+        this.selectedPage = undefined;
+      });
+  }
+
+  addMangaPage(chapterId: string) {
+    if (!this.workspace) return;
+    const pageNumber = this.mangaPages.length + 1;
+    this.http
+      .post<MangaPage>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/production/pages`, {
+        pageNumber, layoutType: 'SINGLE'
+      })
+      .subscribe(page => {
+        this.mangaPages = [...this.mangaPages, page];
+        this.mangaAssetsByPage[page.id] = [];
+      });
+  }
+
+  deleteMangaPage(chapterId: string, pageId: string) {
+    if (!this.workspace) return;
+    this.http
+      .delete(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/production/pages/${pageId}`)
+      .subscribe(() => {
+        this.mangaPages = this.mangaPages.filter(p => p.id !== pageId);
+        if (this.selectedPage?.id === pageId) this.selectedPage = undefined;
+      });
+  }
+
+  selectMangaPage(page: MangaPage, chapterId: string) {
+    this.selectedPage = page;
+    this.loadMangaAssets(page.id, chapterId);
+  }
+
+  loadMangaAssets(pageId: string, chapterId: string) {
+    if (!this.workspace) return;
+    this.http
+      .get<MangaAsset[]>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/production/pages/${pageId}/assets`)
+      .subscribe(assets => {
+        this.mangaAssetsByPage[pageId] = assets;
+      });
+  }
+
+  addMangaAsset(chapterId: string, pageId: string, assetType: string, fileUrl: string) {
+    if (!this.workspace) return;
+    const assets = this.mangaAssetsByPage[pageId] || [];
+    this.http
+      .post<MangaAsset>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/production/pages/${pageId}/assets`, {
+        assetType, fileUrl, posX: 50, posY: 50, width: 200, height: 150, zIndex: assets.length + 1
+      })
+      .subscribe(asset => {
+        this.mangaAssetsByPage[pageId] = [...assets, asset];
+      });
+  }
+
+  updateMangaAsset(chapterId: string, asset: MangaAsset) {
+    if (!this.workspace) return;
+    this.http
+      .put<MangaAsset>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/production/assets/${asset.id}`, asset)
+      .subscribe(updated => {
+        const assets = this.mangaAssetsByPage[asset.pageId] || [];
+        this.mangaAssetsByPage[asset.pageId] = assets.map(a => a.id === updated.id ? updated : a);
+      });
+  }
+
+  deleteMangaAsset(chapterId: string, pageId: string, assetId: string) {
+    if (!this.workspace) return;
+    this.http
+      .delete(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/production/assets/${assetId}`)
+      .subscribe(() => {
+        this.mangaAssetsByPage[pageId] = (this.mangaAssetsByPage[pageId] || []).filter(a => a.id !== assetId);
       });
   }
 

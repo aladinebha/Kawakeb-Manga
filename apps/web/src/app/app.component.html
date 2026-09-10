@@ -110,6 +110,7 @@
         ⏳ Timeline <span class="tab-badge" *ngIf="continuityNotices.length">{{continuityNotices.length}}</span>
       </button>
       <button [class.on]="panel==='storyboard'" (click)="panel='storyboard'">◫ Storyboard</button>
+      <button [class.on]="panel==='production'" (click)="panel='production'">✒ Production</button>
       <button [class.on]="panel==='history'" (click)="panel='history'">◷ History</button>
     </header>
 
@@ -564,6 +565,105 @@
           <div class="empty-state">
             <p>Storyboards belong to chapters.</p>
             <small>Select a chapter manuscript from the Outline to start planning panels.</small>
+          </div>
+        </ng-template>
+      </div>
+    </ng-container>
+    <!-- TAB 6: MANGA PRODUCTION -->
+    <ng-container *ngIf="panel==='production'">
+      <div class="production-view">
+        <div class="production-header">
+          <div>
+            <h3>Manga Creation</h3>
+            <p class="subtext" *ngIf="active?.chapterId">Page layouts & composition for "{{active?.title}}"</p>
+            <p class="subtext" *ngIf="!active?.chapterId">Select a chapter manuscript to edit pages.</p>
+          </div>
+        </div>
+
+        <div *ngIf="active?.chapterId; else noProduction">
+          <!-- Page Browser (Grid of pages) -->
+          <div class="page-browser" *ngIf="!selectedPage">
+            <div class="page-grid">
+              <div class="page-thumb" *ngFor="let page of mangaPages" (click)="selectMangaPage(page, active!.chapterId!)">
+                <span class="page-num">Pg {{page.pageNumber}}</span>
+                <span class="page-layout">{{page.layoutType}}</span>
+                <button class="icon-delete top-right" (click)="deleteMangaPage(active!.chapterId!, page.id); $event.stopPropagation()">✕</button>
+              </div>
+              <div class="page-thumb add-page" (click)="addMangaPage(active!.chapterId!)">
+                <span class="plus-icon">+</span>
+                <span>Add Page</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Page Composition Editor -->
+          <div class="page-editor" *ngIf="selectedPage">
+            <div class="editor-top-bar">
+              <button class="back-btn" (click)="selectedPage = undefined">← Back to Pages</button>
+              <h4>Page {{selectedPage.pageNumber}}</h4>
+            </div>
+            
+            <div class="canvas-container">
+              <div class="manga-canvas">
+                <!-- Render Assets using DOM absolute positioning -->
+                <div class="manga-asset" *ngFor="let asset of mangaAssetsByPage[selectedPage.id]"
+                     [style.left.px]="asset.posX"
+                     [style.top.px]="asset.posY"
+                     [style.width.px]="asset.width"
+                     [style.height.px]="asset.height"
+                     [style.z-index]="asset.zIndex">
+                  
+                  <div class="asset-controls">
+                    <span class="badge">{{asset.assetType}}</span>
+                    <button class="icon-delete" (click)="deleteMangaAsset(active!.chapterId!, selectedPage.id, asset.id)">✕</button>
+                  </div>
+                  
+                  <!-- Render Content -->
+                  <img *ngIf="asset.assetType === 'PANEL_IMAGE' || asset.assetType === 'BACKGROUND' || asset.assetType === 'CHARACTER_LAYER'" 
+                       [src]="asset.fileUrl" class="asset-img" alt="Manga Asset"
+                       (error)="asset.fileUrl = 'assets/placeholder.png'">
+                       
+                  <div class="bubble-content" *ngIf="asset.assetType === 'SPEECH_BUBBLE'">
+                    {{asset.fileUrl}}
+                  </div>
+
+                  <div class="sfx-content" *ngIf="asset.assetType === 'SFX'">
+                    {{asset.fileUrl}}
+                  </div>
+                  
+                  <!-- Position Adjusters -->
+                  <div class="asset-adjusters">
+                    <input type="number" [(ngModel)]="asset.posX" (change)="updateMangaAsset(active!.chapterId!, asset)" title="X">
+                    <input type="number" [(ngModel)]="asset.posY" (change)="updateMangaAsset(active!.chapterId!, asset)" title="Y">
+                    <input type="number" [(ngModel)]="asset.width" (change)="updateMangaAsset(active!.chapterId!, asset)" title="W">
+                    <input type="number" [(ngModel)]="asset.height" (change)="updateMangaAsset(active!.chapterId!, asset)" title="H">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Asset Toolkit -->
+            <div class="asset-toolkit">
+              <h5>Add Asset to Page</h5>
+              <div class="add-asset-box">
+                <select #newAssetType>
+                  <option value="PANEL_IMAGE">Panel Image</option>
+                  <option value="SPEECH_BUBBLE">Speech Bubble</option>
+                  <option value="CHARACTER_LAYER">Character Layer</option>
+                  <option value="BACKGROUND">Background</option>
+                  <option value="SFX">Sound Effect</option>
+                </select>
+                <input #newAssetUrl placeholder="Image URL or text...">
+                <button class="primary" (click)="addMangaAsset(active!.chapterId!, selectedPage.id, newAssetType.value, newAssetUrl.value); newAssetUrl.value=''">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <ng-template #noProduction>
+          <div class="empty-state">
+            <p>Manga production happens at the chapter level.</p>
+            <small>Select a chapter manuscript from the Outline to start laying out pages.</small>
           </div>
         </ng-template>
       </div>

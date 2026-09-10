@@ -38,7 +38,7 @@
 
 Persistent character identity, visual references, locations, scene planning, and panel proposals. No image-generation provider is introduced until this stage.
 
-## 6. Manga creation — planned
+## 6. Manga creation — complete
 
 Page and panel editor, composition workflow, and production assets.
 
