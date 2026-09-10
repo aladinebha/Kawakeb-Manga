@@ -1,0 +1,1 @@
+package studio.manga.entities; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; public interface StoryEntityRepository extends JpaRepository<StoryEntity,UUID>{ List<StoryEntity> findByProjectIdOrderByUpdatedAtDesc(UUID projectId); Optional<StoryEntity> findByIdAndProjectId(UUID id,UUID projectId); }

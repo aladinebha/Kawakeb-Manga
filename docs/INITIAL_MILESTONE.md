@@ -4,7 +4,7 @@ This milestone keeps the first release deliberately narrow: the writing loop bef
 
 ## Module boundaries
 
-* `identity` supplies the current user through a replaceable local adapter. A real managed-auth adapter should validate the authenticated subject and retain the same `CurrentUser` contract.
+* `identity` supplies BCrypt-hashed creator accounts through a session adapter. A managed OIDC/JWT adapter can validate the authenticated subject and retain the same `CurrentUser` contract.
 * `projects` owns project metadata and ownership checks.
 * `documents` owns chapters, creator-authored documents, and append-only document versions.
 * `ai` exposes `AiGateway`; its development implementation returns clearly labelled proposals. No provider SDK appears outside that adapter.

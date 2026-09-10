@@ -5,7 +5,8 @@ services:
       POSTGRES_DB: mangastudio
       POSTGRES_USER: manga
       POSTGRES_PASSWORD: manga
-    ports: ["5432:5432"]
+    # 5432 is commonly occupied by another local PostgreSQL service.
+    ports: ["5433:5432"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U manga -d mangastudio"]
       interval: 5s
