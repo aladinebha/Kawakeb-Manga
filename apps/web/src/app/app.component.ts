@@ -82,6 +82,32 @@ export type SemanticMemoryChunk = {
 export type Workspace = { project: Project; chapters: Chapter[]; documents: Document[] };
 export type Version = { id: string; revision: number; content: string; createdAt: string };
 export type Proposal = { content: string; authority: string; note: string };
+export type VisualReference = {
+  id: string;
+  projectId: string;
+  entityId: string;
+  filePath: string;
+  caption: string;
+  type: string;
+  status: string;
+  createdAt: string;
+};
+export type Scene = {
+  id: string;
+  chapterId: string;
+  orderIndex: number;
+  description: string;
+  createdAt: string;
+};
+export type PanelProposal = {
+  id: string;
+  sceneId: string;
+  orderIndex: number;
+  visualPrompt: string;
+  dialogue: string;
+  status: string;
+  createdAt: string;
+};
 
 @Component({
   selector: 'app-root',
@@ -110,8 +136,8 @@ export class AppComponent implements OnInit, OnDestroy {
   saving = false;
   saved = '';
 
-  // Panels: assistant | atlas | timeline | history
-  panel: 'assistant' | 'atlas' | 'timeline' | 'history' = 'assistant';
+  // Panels: assistant | atlas | timeline | history | storyboard
+  panel: 'assistant' | 'atlas' | 'timeline' | 'history' | 'storyboard' = 'assistant';
 
   // Story Atlas State
   entities: StoryEntity[] = [];
@@ -174,6 +200,11 @@ export class AppComponent implements OnInit, OnDestroy {
   // Memory State
   memoryProposals: MemoryProposal[] = [];
   extractingMemory = false;
+
+  // Pre-production / Storyboard State
+  visualReferences: VisualReference[] = [];
+  scenes: Scene[] = [];
+  panelsByScene: Record<string, PanelProposal[]> = {};
 
   ngOnInit() {
     this.http.get<User>('/api/auth/me').subscribe({
@@ -347,6 +378,7 @@ export class AppComponent implements OnInit, OnDestroy {
   editEntity(entity: StoryEntity) {
     this.selectedEntity = { ...entity };
     this.parseAttributes(entity.attributes);
+    this.loadVisualReferences(entity.id);
     this.panel = 'atlas';
   }
 
@@ -713,6 +745,99 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe(() => {
         this.memoryProposals = this.memoryProposals.filter(item => item.id !== p.id);
+      });
+  }
+
+  // --- Pre-production / Storyboard ---
+
+  loadVisualReferences(entityId: string) {
+    if (!this.workspace) return;
+    this.http
+      .get<VisualReference[]>(`/api/projects/${this.workspace.project.id}/visual-references?entityId=${entityId}`)
+      .subscribe(refs => (this.visualReferences = refs));
+  }
+
+  addVisualReference(entityId: string, filePath: string, caption: string, type: string) {
+    if (!this.workspace) return;
+    this.http
+      .post<VisualReference>(`/api/projects/${this.workspace.project.id}/visual-references`, {
+        entityId, filePath, caption, type, status: 'PROPOSED'
+      })
+      .subscribe(ref => {
+        this.visualReferences = [...this.visualReferences, ref];
+      });
+  }
+
+  deleteVisualReference(refId: string) {
+    if (!this.workspace) return;
+    this.http
+      .delete(`/api/projects/${this.workspace.project.id}/visual-references/${refId}`)
+      .subscribe(() => {
+        this.visualReferences = this.visualReferences.filter(r => r.id !== refId);
+      });
+  }
+
+  loadScenes(chapterId: string) {
+    if (!this.workspace) return;
+    this.http
+      .get<Scene[]>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/storyboard/scenes`)
+      .subscribe(scenes => {
+        this.scenes = scenes;
+        scenes.forEach(s => this.loadPanels(s.id, chapterId));
+      });
+  }
+
+  addScene(chapterId: string, description: string) {
+    if (!this.workspace) return;
+    const orderIndex = this.scenes.length;
+    this.http
+      .post<Scene>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/storyboard/scenes`, {
+        orderIndex, description
+      })
+      .subscribe(scene => {
+        this.scenes = [...this.scenes, scene];
+        this.panelsByScene[scene.id] = [];
+      });
+  }
+
+  deleteScene(chapterId: string, sceneId: string) {
+    if (!this.workspace) return;
+    this.http
+      .delete(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/storyboard/scenes/${sceneId}`)
+      .subscribe(() => {
+        this.scenes = this.scenes.filter(s => s.id !== sceneId);
+        delete this.panelsByScene[sceneId];
+      });
+  }
+
+  loadPanels(sceneId: string, chapterId: string) {
+    if (!this.workspace) return;
+    this.http
+      .get<PanelProposal[]>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/storyboard/scenes/${sceneId}/panels`)
+      .subscribe(panels => {
+        this.panelsByScene[sceneId] = panels;
+      });
+  }
+
+  addPanel(sceneId: string, chapterId: string, visualPrompt: string, dialogue: string) {
+    if (!this.workspace) return;
+    const panels = this.panelsByScene[sceneId] || [];
+    const orderIndex = panels.length;
+    this.http
+      .post<PanelProposal>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/storyboard/scenes/${sceneId}/panels`, {
+        orderIndex, visualPrompt, dialogue, status: 'PROPOSED'
+      })
+      .subscribe(panel => {
+        this.panelsByScene[sceneId] = [...panels, panel];
+      });
+  }
+
+  deletePanel(chapterId: string, sceneId: string, panelId: string) {
+    if (!this.workspace) return;
+    this.http
+      .delete(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/storyboard/panels/${panelId}`)
+      .subscribe(() => {
+        this.panelsByScene[sceneId] = (this.panelsByScene[sceneId] || []).filter(p => p.id !== panelId);
       });
   }
 

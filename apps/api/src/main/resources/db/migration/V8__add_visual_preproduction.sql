@@ -1,0 +1,31 @@
+CREATE TABLE visual_reference (
+    id UUID PRIMARY KEY,
+    project_id UUID NOT NULL,
+    entity_id UUID NOT NULL REFERENCES story_entity(id) ON DELETE CASCADE,
+    file_path TEXT NOT NULL,
+    caption TEXT,
+    type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PROPOSED',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE scene (
+    id UUID PRIMARY KEY,
+    chapter_id UUID NOT NULL REFERENCES chapter(id) ON DELETE CASCADE,
+    order_index INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE panel_proposal (
+    id UUID PRIMARY KEY,
+    scene_id UUID NOT NULL REFERENCES scene(id) ON DELETE CASCADE,
+    order_index INTEGER NOT NULL,
+    visual_prompt TEXT NOT NULL,
+    dialogue TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'PROPOSED',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);

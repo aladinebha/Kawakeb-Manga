@@ -109,6 +109,7 @@
       <button [class.on]="panel==='timeline'" (click)="panel='timeline'">
         ⏳ Timeline <span class="tab-badge" *ngIf="continuityNotices.length">{{continuityNotices.length}}</span>
       </button>
+      <button [class.on]="panel==='storyboard'" (click)="panel='storyboard'">◫ Storyboard</button>
       <button [class.on]="panel==='history'" (click)="panel='history'">◷ History</button>
     </header>
 
@@ -318,6 +319,32 @@
           <button class="action-btn-outline" (click)="openEventModal()">+ Create Event With This Entry</button>
         </div>
 
+        <!-- Visual References -->
+        <div class="card-section visual-refs-card">
+          <label class="section-label">VISUAL REFERENCES ({{visualReferences.length}})</label>
+          <div class="visual-refs-grid" *ngIf="visualReferences.length; else noVisualRefs">
+            <div class="visual-ref-item" *ngFor="let ref of visualReferences">
+              <a [href]="ref.filePath" target="_blank" class="ref-link">{{ref.caption || ref.filePath}}</a>
+              <span class="ref-type badge">{{ref.type}}</span>
+              <button class="icon-delete" (click)="deleteVisualReference(ref.id)">✕</button>
+            </div>
+          </div>
+          <ng-template #noVisualRefs>
+            <p class="empty-hint">No visual references attached.</p>
+          </ng-template>
+          <div class="add-ref-box">
+            <input #refUrl placeholder="Image URL / Path">
+            <input #refCaption placeholder="Caption">
+            <select #refType>
+              <option value="CHARACTER_SHEET">Character Sheet</option>
+              <option value="EXPRESSION">Expression</option>
+              <option value="LOCATION_MOODBOARD">Location Moodboard</option>
+              <option value="CONCEPT_ART">Concept Art</option>
+            </select>
+            <button class="action-btn" (click)="addVisualReference(selectedEntity.id, refUrl.value, refCaption.value, refType.value); refUrl.value=''; refCaption.value=''">+ Attach</button>
+          </div>
+        </div>
+
         <!-- Save Button -->
         <div class="inspector-footer">
           <button class="primary save-entity-btn" (click)="saveEntity()">Save Story Entry</button>
@@ -481,6 +508,64 @@
           <span>{{v.createdAt | date:'medium'}}</span>
           <button (click)="restore(v)">Restore</button>
         </article>
+      </div>
+    </ng-container>
+
+    <!-- TAB 5: STORYBOARD -->
+    <ng-container *ngIf="panel==='storyboard'">
+      <div class="storyboard-view">
+        <div class="storyboard-header">
+          <div>
+            <h3>Scene Planning</h3>
+            <p class="subtext" *ngIf="active?.chapterId">Storyboard panels for "{{active?.title}}"</p>
+            <p class="subtext" *ngIf="!active?.chapterId">Select a chapter document to plan scenes.</p>
+          </div>
+        </div>
+
+        <div *ngIf="active?.chapterId; else noStoryboard">
+          <div class="scenes-list">
+            <div class="scene-item" *ngFor="let scene of scenes; let i = index">
+              <div class="scene-head">
+                <h4>Scene {{i + 1}}</h4>
+                <p>{{scene.description}}</p>
+                <button class="icon-delete" (click)="deleteScene(active!.chapterId!, scene.id)">✕</button>
+              </div>
+
+              <!-- Panels for Scene -->
+              <div class="panels-grid">
+                <div class="panel-card" *ngFor="let panel of panelsByScene[scene.id]; let pIdx = index">
+                  <div class="panel-head">
+                    <span class="badge">Panel {{pIdx + 1}}</span>
+                    <button class="icon-delete" (click)="deletePanel(active!.chapterId!, scene.id, panel.id)">✕</button>
+                  </div>
+                  <div class="panel-body">
+                    <strong>Visual:</strong> {{panel.visualPrompt}}
+                    <br>
+                    <strong *ngIf="panel.dialogue">Dialogue:</strong> {{panel.dialogue}}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add Panel -->
+              <div class="add-panel-box">
+                <input #panelVisual placeholder="Visual Prompt...">
+                <input #panelDialogue placeholder="Dialogue (optional)...">
+                <button class="action-btn" (click)="addPanel(scene.id, active!.chapterId!, panelVisual.value, panelDialogue.value); panelVisual.value=''; panelDialogue.value=''">+ Panel</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="add-scene-box">
+            <textarea #sceneDesc class="clean-textarea" rows="2" placeholder="Describe a new scene..."></textarea>
+            <button class="primary" (click)="addScene(active!.chapterId!, sceneDesc.value); sceneDesc.value=''">+ Add Scene</button>
+          </div>
+        </div>
+        <ng-template #noStoryboard>
+          <div class="empty-state">
+            <p>Storyboards belong to chapters.</p>
+            <small>Select a chapter manuscript from the Outline to start planning panels.</small>
+          </div>
+        </ng-template>
       </div>
     </ng-container>
   </aside>

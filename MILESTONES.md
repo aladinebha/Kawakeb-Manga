@@ -34,7 +34,7 @@
 * Hybrid context retrieval combining structured canon entities, relationships, and timeline events with semantic chunks
 * Memory-grounded AI proposals citing referenced Story Atlas knowledge
 
-## 5. Visual pre-production — planned
+## 5. Visual pre-production — complete
 
 Persistent character identity, visual references, locations, scene planning, and panel proposals. No image-generation provider is introduced until this stage.
 
