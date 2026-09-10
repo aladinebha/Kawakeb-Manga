@@ -46,7 +46,7 @@ Page and panel editor, composition workflow, and production assets.
 
 Stable releases, creator profiles, publishing controls, and analytics.
 
-## 8. Reader platform — planned
+## 8. Reader platform — complete
 
 Public reading, discovery, ratings, follows, comments, bookmarks, and reading history.
 

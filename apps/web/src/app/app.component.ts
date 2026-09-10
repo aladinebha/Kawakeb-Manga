@@ -147,6 +147,18 @@ export type ChapterAnalytics = {
   likes: number;
   commentsCount: number;
 };
+export type ChapterComment = {
+  id: string;
+  chapterId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+};
+export type ReaderBookmark = {
+  userId: string;
+  projectId: string;
+  createdAt: string;
+};
 
 @Component({
   selector: 'app-root',
@@ -174,6 +186,9 @@ export class AppComponent implements OnInit, OnDestroy {
   proposal?: Proposal;
   saving = false;
   saved = '';
+
+  // App Modes: Studio vs Discovery (Reader)
+  viewMode: 'studio' | 'reader' = 'studio';
 
   // Panels: assistant | atlas | timeline | history | storyboard | production | publishing
   panel: 'assistant' | 'atlas' | 'timeline' | 'history' | 'storyboard' | 'production' | 'publishing' = 'assistant';
@@ -255,6 +270,16 @@ export class AppComponent implements OnInit, OnDestroy {
   projectPublishing?: ProjectPublishing;
   chapterRelease?: ChapterRelease;
   chapterAnalytics?: ChapterAnalytics;
+
+  // Reader / Discovery State
+  publicProjects: Project[] = [];
+  activeReaderProject?: Project;
+  readerChapters: Document[] = [];
+  activeReaderChapter?: Document;
+  readerPages: MangaPage[] = [];
+  readerAssets: MangaAsset[] = [];
+  readerComments: ChapterComment[] = [];
+  bookmarkedProjects: ReaderBookmark[] = [];
 
   ngOnInit() {
     this.http.get<User>('/api/auth/me').subscribe({
@@ -1009,6 +1034,59 @@ export class AppComponent implements OnInit, OnDestroy {
         this.chapterRelease = r;
         this.loadChapterPublishing(chapterId); // reload analytics
       });
+  }
+
+  // --- Reader / Discovery Platform ---
+
+  toggleViewMode() {
+    this.viewMode = this.viewMode === 'studio' ? 'reader' : 'studio';
+    if (this.viewMode === 'reader') {
+      this.loadDiscoverProjects();
+      this.loadBookmarks();
+    }
+  }
+
+  loadDiscoverProjects() {
+    this.http.get<Project[]>('/api/reader/discover').subscribe(projects => this.publicProjects = projects);
+  }
+
+  loadBookmarks() {
+    this.http.get<ReaderBookmark[]>('/api/reader/bookmarks').subscribe(bookmarks => this.bookmarkedProjects = bookmarks);
+  }
+
+  toggleBookmark(projectId: string) {
+    this.http.post(`/api/reader/projects/${projectId}/bookmark`, {}).subscribe(() => this.loadBookmarks());
+  }
+
+  isBookmarked(projectId: string): boolean {
+    return this.bookmarkedProjects.some(b => b.projectId === projectId);
+  }
+
+  openReaderProject(project: Project) {
+    this.activeReaderProject = project;
+    this.activeReaderChapter = undefined;
+    this.http.get<Document[]>(`/api/reader/projects/${project.id}/chapters`).subscribe(chapters => {
+      this.readerChapters = chapters;
+    });
+  }
+
+  readChapter(chapter: Document) {
+    this.activeReaderChapter = chapter;
+    this.http.get<{pages: MangaPage[], assets: MangaAsset[]}>(`/api/reader/chapters/${chapter.chapterId}/pages`).subscribe(res => {
+      this.readerPages = res.pages;
+      this.readerAssets = res.assets;
+    });
+    this.loadComments(chapter.chapterId!);
+  }
+
+  loadComments(chapterId: string) {
+    this.http.get<ChapterComment[]>(`/api/reader/chapters/${chapterId}/comments`).subscribe(comments => this.readerComments = comments);
+  }
+
+  addComment(chapterId: string, content: string) {
+    this.http.post<ChapterComment>(`/api/reader/chapters/${chapterId}/comments`, { content }).subscribe(comment => {
+      this.readerComments = [...this.readerComments, comment];
+    });
   }
 
   // --- Document & Writing Operations ---

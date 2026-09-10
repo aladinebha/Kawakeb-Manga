@@ -1,4 +1,14 @@
-<main class="studio" *ngIf="workspace; else welcome">
+<ng-container *ngIf="user; else auth">
+  <div class="global-top-bar">
+    <div class="brand">✦ Manga<span class="light">verse</span></div>
+    <div class="mode-toggles">
+      <button [class.active]="viewMode === 'reader'" (click)="toggleViewMode()">Discovery</button>
+      <button [class.active]="viewMode === 'studio'" (click)="toggleViewMode()">Creator Studio</button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="viewMode === 'studio'">
+    <main class="studio" *ngIf="workspace; else welcome">
   <!-- Left Workspace Rail -->
   <aside class="rail">
     <div class="brand"><span>✦</span> manga<br><em>studio</em></div>
@@ -824,15 +834,105 @@
 
 <!-- Welcome & Auth Screen -->
 <ng-template #welcome>
-  <ng-container *ngIf="user; else auth">
-    <section class="welcome">
-      <div class="brand"><span>✦</span> manga <em>studio</em></div>
-      <h1>Your story starts<br>wherever you do.</h1>
-      <p>Welcome, {{user.displayName}}. Free-form writing, thoughtful structure, and canon control.</p>
-      <button class="new" (click)="createProject()">Create your first project</button>
-      <button class="signout" (click)="logout()">Sign out</button>
-    </section>
+  <section class="welcome">
+    <div class="brand"><span>✦</span> manga <em>studio</em></div>
+    <h1>Your story starts<br>wherever you do.</h1>
+    <p>Welcome, {{user?.displayName}}. Free-form writing, thoughtful structure, and canon control.</p>
+    <button class="new" (click)="createProject()">Create your first project</button>
+    <button class="signout" (click)="logout()">Sign out</button>
+  </section>
+</ng-template>
   </ng-container>
+
+  <!-- READER PLATFORM -->
+  <ng-container *ngIf="viewMode === 'reader'">
+    <main class="reader-platform">
+      
+      <!-- Discovery View -->
+      <div *ngIf="!activeReaderProject" class="discovery-view">
+        <h2>Discover New Worlds</h2>
+        <div class="project-grid">
+          <div class="project-card" *ngFor="let p of publicProjects" (click)="openReaderProject(p)">
+            <div class="cover-placeholder">📖</div>
+            <h4>{{p.title}}</h4>
+            <p class="desc">{{p.description}}</p>
+            <button class="action-btn" (click)="$event.stopPropagation(); toggleBookmark(p.id)">
+              {{ isBookmarked(p.id) ? '★ Bookmarked' : '☆ Bookmark' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reader View -->
+      <div *ngIf="activeReaderProject" class="reader-view">
+        <div class="reader-nav">
+          <button class="back-btn" (click)="activeReaderProject = undefined">← Back to Discovery</button>
+          <h3>{{activeReaderProject.title}}</h3>
+        </div>
+
+        <!-- Chapters List -->
+        <div class="chapters-list" *ngIf="!activeReaderChapter">
+          <h4>Chapters</h4>
+          <div class="chapter-item" *ngFor="let c of readerChapters" (click)="readChapter(c)">
+            <span>{{c.title}}</span>
+            <button class="primary">Read</button>
+          </div>
+          <div class="empty-state" *ngIf="readerChapters.length === 0">No chapters published yet.</div>
+        </div>
+
+        <!-- Reading Pane -->
+        <div class="reading-pane" *ngIf="activeReaderChapter">
+          <div class="reader-actions">
+            <button class="back-btn" (click)="activeReaderChapter = undefined">← Chapters</button>
+            <h4>{{activeReaderChapter.title}}</h4>
+          </div>
+
+          <!-- Page Viewer -->
+          <div class="page-viewer">
+            <div class="manga-page" *ngFor="let page of readerPages">
+              <div class="manga-canvas read-only">
+                <div *ngFor="let asset of readerAssets" 
+                     [hidden]="asset.pageId !== page.id"
+                     class="asset-element {{asset.assetType | lowercase}}"
+                     [style.left.px]="asset.posX"
+                     [style.top.px]="asset.posY"
+                     [style.width.px]="asset.width"
+                     [style.height.px]="asset.height"
+                     [style.z-index]="asset.zIndex">
+                  
+                  <img *ngIf="asset.assetType === 'PANEL_IMAGE' || asset.assetType === 'CHARACTER' || asset.assetType === 'BACKGROUND'" 
+                       [src]="asset.fileUrl" alt="">
+                  
+                  <div class="bubble-text" *ngIf="asset.assetType === 'SPEECH_BUBBLE'">{{asset.fileUrl}}</div>
+                  <div class="sfx-text" *ngIf="asset.assetType === 'SFX'">{{asset.fileUrl}}</div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="readerPages.length === 0" class="empty-state">This chapter has no pages yet.</div>
+          </div>
+
+          <!-- Comments Section -->
+          <div class="comments-section">
+            <h4>Comments ({{readerComments.length}})</h4>
+            <div class="comment-list">
+              <div class="comment" *ngFor="let comment of readerComments">
+                <div class="comment-header">
+                  <strong>Reader</strong>
+                  <span class="date">{{comment.createdAt | date:'short'}}</span>
+                </div>
+                <p>{{comment.content}}</p>
+              </div>
+            </div>
+            <div class="add-comment">
+              <textarea #commentInput placeholder="What did you think of this chapter?" rows="3" class="clean-textarea"></textarea>
+              <button class="primary" (click)="addComment(activeReaderChapter.chapterId!, commentInput.value); commentInput.value=''">Post Comment</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </ng-container>
+</ng-container>
 
   <ng-template #auth>
     <section class="auth">
@@ -860,4 +960,3 @@
       </div>
     </section>
   </ng-template>
-</ng-template>
