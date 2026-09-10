@@ -17,15 +17,14 @@
 * Rich character attributes (Role/Archetype, Appearance, Personality, Abilities, Equipment)
 * Timeline event links with participating story entries and source documents
 
-## 3. Timeline & continuity — in progress
+## 3. Timeline & continuity — complete
 
-Completed foundation:
 * Story timeline events with relative ordering (`order_index`) and narrative era/time labels
 * Source document provenance links on events
 * Many-to-many participant entity links between timeline events and story entries
 * Interactive Timeline stream and event creation/editing UI
-
-Remaining: non-blocking contradiction review and automated continuity checks.
+* Automated continuity engine detecting contradicted entries, conflicting relationships, chronological ambiguities, and scene text lore conflicts
+* Non-blocking contradiction review panel with creator resolution workflows (accept into canon, move to draft, or dismiss)
 
 ## 4. AI memory — planned
 

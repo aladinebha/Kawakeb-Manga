@@ -44,6 +44,18 @@ export type TimelineEvent = {
   status: string;
   entityIds: string[];
 };
+export type ContinuityNotice = {
+  id: string;
+  type: string;
+  severity: string;
+  title: string;
+  description: string;
+  entityId?: string;
+  relationshipId?: string;
+  eventId?: string;
+  documentId?: string;
+  suggestedResolutions: string[];
+};
 export type Workspace = { project: Project; chapters: Chapter[]; documents: Document[] };
 export type Version = { id: string; revision: number; content: string; createdAt: string };
 export type Proposal = { content: string; authority: string; note: string };
@@ -132,6 +144,10 @@ export class AppComponent implements OnInit, OnDestroy {
     entityIds: []
   };
 
+  // Continuity State
+  continuityNotices: ContinuityNotice[] = [];
+  checkingContinuity = false;
+
   ngOnInit() {
     this.http.get<User>('/api/auth/me').subscribe({
       next: user => {
@@ -204,6 +220,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.loadEntities();
       this.loadRelationships();
       this.loadTimeline();
+      this.loadContinuity();
       this.proposal = undefined;
       this.selectedEntity = undefined;
     });
@@ -347,6 +364,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.entities = this.entities.map(item => (item.id === entity.id ? entity : item));
         this.selectedEntity = { ...entity };
         this.parseAttributes(entity.attributes);
+        this.loadContinuity();
       });
   }
 
@@ -363,6 +381,7 @@ export class AppComponent implements OnInit, OnDestroy {
         }
         this.loadRelationships();
         this.loadTimeline();
+        this.loadContinuity();
       });
   }
 
@@ -382,6 +401,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.relationships = [relationship, ...this.relationships];
         this.relationshipTarget = '';
         this.relationshipType = '';
+        this.loadContinuity();
       });
   }
 
@@ -391,6 +411,7 @@ export class AppComponent implements OnInit, OnDestroy {
       .delete(`/api/projects/${this.workspace.project.id}/relationships/${id}`)
       .subscribe(() => {
         this.relationships = this.relationships.filter(r => r.id !== id);
+        this.loadContinuity();
       });
   }
 
@@ -487,6 +508,7 @@ export class AppComponent implements OnInit, OnDestroy {
         .subscribe(updated => {
           this.timelineEvents = this.timelineEvents.map(e => (e.id === updated.id ? updated : e));
           this.closeEventModal();
+          this.loadContinuity();
         });
     } else {
       this.http
@@ -499,6 +521,7 @@ export class AppComponent implements OnInit, OnDestroy {
             (a, b) => a.orderIndex - b.orderIndex
           );
           this.closeEventModal();
+          this.loadContinuity();
         });
     }
   }
@@ -510,6 +533,7 @@ export class AppComponent implements OnInit, OnDestroy {
       .delete(`/api/projects/${this.workspace.project.id}/events/${id}`)
       .subscribe(() => {
         this.timelineEvents = this.timelineEvents.filter(e => e.id !== id);
+        this.loadContinuity();
       });
   }
 
@@ -518,6 +542,87 @@ export class AppComponent implements OnInit, OnDestroy {
     if (entity) {
       this.editEntity(entity);
     }
+  }
+
+  // --- Continuity & Contradiction Review ---
+
+  loadContinuity() {
+    if (this.workspace) {
+      this.http
+        .get<ContinuityNotice[]>(`/api/projects/${this.workspace.project.id}/continuity`)
+        .subscribe(items => (this.continuityNotices = items));
+    }
+  }
+
+  checkSceneContinuity() {
+    if (!this.workspace) return;
+    this.checkingContinuity = true;
+    this.panel = 'assistant';
+    const text = this.active?.content || '';
+    this.http
+      .post<ContinuityNotice[]>(
+        `/api/projects/${this.workspace.project.id}/continuity/check`,
+        { text }
+      )
+      .subscribe({
+        next: notices => {
+          this.continuityNotices = notices;
+          this.checkingContinuity = false;
+          if (notices.length) {
+            const summary = notices
+              .slice(0, 3)
+              .map(n => `• [${n.severity}] ${n.title}\n  ${n.description}`)
+              .join('\n\n');
+            this.proposal = {
+              authority: 'AI_SUGGESTION',
+              content: `Continuity Review for current manuscript:\n\n${summary}${
+                notices.length > 3 ? `\n\n(+${notices.length - 3} more items in Timeline & Continuity tab)` : ''
+              }`,
+              note: 'These notices are non-blocking. You decide what belongs in your story canon.'
+            };
+          } else {
+            this.proposal = {
+              authority: 'AI_SUGGESTION',
+              content: 'Continuity scan passed with 0 contradictions.\n\nAll mentioned characters and lore adhere to your established Story Atlas.',
+              note: 'No continuity discrepancies detected in active manuscript.'
+            };
+          }
+        },
+        error: () => (this.checkingContinuity = false)
+      });
+  }
+
+  resolveNotice(notice: ContinuityNotice, action: string) {
+    if (!this.workspace) return;
+    this.http
+      .post<ContinuityNotice[]>(
+        `/api/projects/${this.workspace.project.id}/continuity/resolve`,
+        {
+          noticeId: notice.id,
+          action,
+          entityId: notice.entityId,
+          relationshipId: notice.relationshipId,
+          eventId: notice.eventId
+        }
+      )
+      .subscribe(notices => {
+        this.continuityNotices = notices;
+        this.loadEntities();
+        this.loadRelationships();
+        this.loadTimeline();
+      });
+  }
+
+  dismissNotice(noticeId: string) {
+    if (!this.workspace) return;
+    this.http
+      .post<ContinuityNotice[]>(
+        `/api/projects/${this.workspace.project.id}/continuity/resolve`,
+        { noticeId, action: 'DISMISS' }
+      )
+      .subscribe(notices => {
+        this.continuityNotices = notices;
+      });
   }
 
   // --- Document & Writing Operations ---

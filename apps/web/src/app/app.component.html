@@ -75,6 +75,13 @@
         <input [(ngModel)]="active.title" (ngModelChange)="queueSave()" aria-label="Document title">
       </div>
       <div class="save-state">
+        <button
+          class="continuity-pill"
+          [class.has-issues]="continuityNotices.length > 0"
+          (click)="panel='timeline'"
+          title="Review non-blocking continuity notices">
+          {{continuityNotices.length ? '⚠ ' + continuityNotices.length + ' Notices' : '✓ Continuity Clean'}}
+        </button>
         {{saving ? 'Saving…' : saved || 'All changes saved'}}
         <button (click)="flushSave()">Save</button>
       </div>
@@ -99,7 +106,9 @@
     <header class="panel-tabs">
       <button [class.on]="panel==='assistant'" (click)="panel='assistant'">✦ Assistant</button>
       <button [class.on]="panel==='atlas'" (click)="panel='atlas'">◈ Atlas</button>
-      <button [class.on]="panel==='timeline'" (click)="panel='timeline'">⏳ Timeline</button>
+      <button [class.on]="panel==='timeline'" (click)="panel='timeline'">
+        ⏳ Timeline <span class="tab-badge" *ngIf="continuityNotices.length">{{continuityNotices.length}}</span>
+      </button>
       <button [class.on]="panel==='history'" (click)="panel='history'">◷ History</button>
     </header>
 
@@ -115,6 +124,9 @@
         <button (click)="ask('CONTINUE')">Continue writing scene</button>
         <button (click)="ask('DIALOGUE')">Improve dialogue tension</button>
         <button (click)="ask('BRAINSTORM')">Brainstorm plot twist</button>
+        <button (click)="checkSceneContinuity()" [disabled]="checkingContinuity">
+          {{checkingContinuity ? 'Scanning scene…' : '⚖ Check scene continuity'}}
+        </button>
       </div>
 
       <article class="proposal" *ngIf="proposal">
@@ -343,6 +355,52 @@
             <p class="subtext">Chronological narrative events and canon continuity.</p>
           </div>
           <button class="primary add-event-btn" (click)="openEventModal()">+ Add Event</button>
+        </div>
+
+        <!-- Non-Blocking Contradiction & Continuity Review -->
+        <div class="continuity-card" *ngIf="continuityNotices.length">
+          <div class="continuity-card-head">
+            <div>
+              <span class="eyebrow-alert">⚠ CONTRADICTION & CONTINUITY REVIEW ({{continuityNotices.length}})</span>
+              <p class="continuity-card-sub">Non-blocking notices. You have final authority over story canon.</p>
+            </div>
+            <button class="action-btn-subtle" (click)="loadContinuity()">Re-scan</button>
+          </div>
+
+          <div class="notices-list">
+            <div class="notice-row" *ngFor="let notice of continuityNotices">
+              <div class="notice-main">
+                <div class="notice-tags">
+                  <span class="notice-badge">{{notice.type}}</span>
+                  <span class="status-pill" [attr.data-status]="notice.severity === 'WARNING' ? 'CONTRADICTED' : 'AI_SUGGESTION'">{{notice.severity}}</span>
+                </div>
+                <h5>{{notice.title}}</h5>
+                <p>{{notice.description}}</p>
+              </div>
+              <div class="notice-buttons">
+                <button
+                  *ngIf="notice.suggestedResolutions.includes('MARK_CANON')"
+                  class="btn-notice-canon"
+                  (click)="resolveNotice(notice, 'MARK_CANON')"
+                  title="Accept as intentional retcon or canon twist">
+                  ✓ Accept as Canon
+                </button>
+                <button
+                  *ngIf="notice.suggestedResolutions.includes('MARK_DRAFT')"
+                  class="btn-notice-draft"
+                  (click)="resolveNotice(notice, 'MARK_DRAFT')"
+                  title="Mark entry as draft for revision">
+                  ✎ Move to Draft
+                </button>
+                <button
+                  class="btn-notice-dismiss"
+                  (click)="dismissNotice(notice.id)"
+                  title="Dismiss notice without changing canon">
+                  ✕ Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="timeline-stream" *ngIf="timelineEvents.length; else noEvents">
