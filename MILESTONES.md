@@ -42,7 +42,7 @@ Persistent character identity, visual references, locations, scene planning, and
 
 Page and panel editor, composition workflow, and production assets.
 
-## 7. Publishing & creator tools — planned
+## 7. Publishing & creator tools — complete
 
 Stable releases, creator profiles, publishing controls, and analytics.
 

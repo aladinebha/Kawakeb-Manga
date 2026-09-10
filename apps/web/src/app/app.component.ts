@@ -128,6 +128,25 @@ export type MangaAsset = {
   zIndex: number;
   createdAt: string;
 };
+export type CreatorProfile = {
+  penName: string;
+  bio: string;
+  avatarUrl: string;
+};
+export type ProjectPublishing = {
+  visibility: string;
+  tags: string;
+};
+export type ChapterRelease = {
+  status: string;
+  publishedAt?: string;
+  scheduledFor?: string;
+};
+export type ChapterAnalytics = {
+  views: number;
+  likes: number;
+  commentsCount: number;
+};
 
 @Component({
   selector: 'app-root',
@@ -156,8 +175,8 @@ export class AppComponent implements OnInit, OnDestroy {
   saving = false;
   saved = '';
 
-  // Panels: assistant | atlas | timeline | history | storyboard | production
-  panel: 'assistant' | 'atlas' | 'timeline' | 'history' | 'storyboard' | 'production' = 'assistant';
+  // Panels: assistant | atlas | timeline | history | storyboard | production | publishing
+  panel: 'assistant' | 'atlas' | 'timeline' | 'history' | 'storyboard' | 'production' | 'publishing' = 'assistant';
 
   // Story Atlas State
   entities: StoryEntity[] = [];
@@ -230,6 +249,12 @@ export class AppComponent implements OnInit, OnDestroy {
   mangaPages: MangaPage[] = [];
   mangaAssetsByPage: Record<string, MangaAsset[]> = {};
   selectedPage?: MangaPage;
+
+  // Publishing State
+  creatorProfile?: CreatorProfile;
+  projectPublishing?: ProjectPublishing;
+  chapterRelease?: ChapterRelease;
+  chapterAnalytics?: ChapterAnalytics;
 
   ngOnInit() {
     this.http.get<User>('/api/auth/me').subscribe({
@@ -320,6 +345,7 @@ export class AppComponent implements OnInit, OnDestroy {
     
     if (d.chapterId) {
       this.loadMangaPages(d.chapterId);
+      this.loadChapterPublishing(d.chapterId);
     }
   }
 
@@ -948,6 +974,40 @@ export class AppComponent implements OnInit, OnDestroy {
       .delete(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/production/assets/${assetId}`)
       .subscribe(() => {
         this.mangaAssetsByPage[pageId] = (this.mangaAssetsByPage[pageId] || []).filter(a => a.id !== assetId);
+      });
+  }
+
+  // --- Publishing ---
+
+  loadPublishingState() {
+    if (!this.workspace) return;
+    this.http.get<CreatorProfile>('/api/publishing/profile').subscribe(p => this.creatorProfile = p);
+    this.http.get<ProjectPublishing>(`/api/projects/${this.workspace.project.id}/publishing`).subscribe(p => this.projectPublishing = p);
+  }
+
+  updateCreatorProfile(penName: string, bio: string, avatarUrl: string) {
+    this.http.put<CreatorProfile>('/api/publishing/profile', { penName, bio, avatarUrl })
+      .subscribe(p => this.creatorProfile = p);
+  }
+
+  updateProjectPublishing(visibility: string, tags: string) {
+    if (!this.workspace) return;
+    this.http.put<ProjectPublishing>(`/api/projects/${this.workspace.project.id}/publishing`, { visibility, tags })
+      .subscribe(p => this.projectPublishing = p);
+  }
+
+  loadChapterPublishing(chapterId: string) {
+    if (!this.workspace) return;
+    this.http.get<ChapterRelease>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/release`).subscribe(r => this.chapterRelease = r);
+    this.http.get<ChapterAnalytics>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/analytics`).subscribe(a => this.chapterAnalytics = a);
+  }
+
+  publishChapter(chapterId: string) {
+    if (!this.workspace) return;
+    this.http.post<ChapterRelease>(`/api/projects/${this.workspace.project.id}/chapters/${chapterId}/release/publish`, {})
+      .subscribe(r => {
+        this.chapterRelease = r;
+        this.loadChapterPublishing(chapterId); // reload analytics
       });
   }
 

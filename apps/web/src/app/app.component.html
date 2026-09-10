@@ -111,6 +111,7 @@
       </button>
       <button [class.on]="panel==='storyboard'" (click)="panel='storyboard'">◫ Storyboard</button>
       <button [class.on]="panel==='production'" (click)="panel='production'">✒ Production</button>
+      <button [class.on]="panel==='publishing'" (click)="panel='publishing'">🚀 Publishing</button>
       <button [class.on]="panel==='history'" (click)="panel='history'">◷ History</button>
     </header>
 
@@ -666,6 +667,92 @@
             <small>Select a chapter manuscript from the Outline to start laying out pages.</small>
           </div>
         </ng-template>
+      </div>
+    </ng-container>
+
+    <!-- TAB 7: PUBLISHING -->
+    <ng-container *ngIf="panel==='publishing'">
+      <div class="publishing-view">
+        <div class="publishing-header">
+          <h3>Publishing & Creator Tools</h3>
+        </div>
+
+        <!-- Creator Profile Settings -->
+        <div class="publishing-card" *ngIf="creatorProfile">
+          <h4>Creator Profile</h4>
+          <div class="profile-form">
+            <label>Pen Name</label>
+            <input type="text" [(ngModel)]="creatorProfile.penName">
+            
+            <label>Bio</label>
+            <textarea rows="3" class="clean-textarea" [(ngModel)]="creatorProfile.bio"></textarea>
+            
+            <label>Avatar URL</label>
+            <input type="text" [(ngModel)]="creatorProfile.avatarUrl" placeholder="https://...">
+
+            <button class="action-btn" (click)="updateCreatorProfile(creatorProfile.penName, creatorProfile.bio, creatorProfile.avatarUrl)">Save Profile</button>
+          </div>
+        </div>
+
+        <!-- Project Visibility -->
+        <div class="publishing-card" *ngIf="projectPublishing">
+          <h4>Project Settings</h4>
+          <div class="visibility-form">
+            <label>Visibility</label>
+            <select [(ngModel)]="projectPublishing.visibility" (change)="updateProjectPublishing(projectPublishing.visibility, projectPublishing.tags)">
+              <option value="PRIVATE">Private (Only me)</option>
+              <option value="UNLISTED">Unlisted (Anyone with link)</option>
+              <option value="PUBLIC">Public (Listed on reader)</option>
+            </select>
+            
+            <label>Tags</label>
+            <input type="text" [(ngModel)]="projectPublishing.tags" (blur)="updateProjectPublishing(projectPublishing.visibility, projectPublishing.tags)" placeholder="e.g. fantasy, action, romance">
+          </div>
+        </div>
+
+        <!-- Chapter Release -->
+        <div class="publishing-card chapter-release-card" *ngIf="active?.chapterId">
+          <h4>Chapter Release: "{{active?.title}}"</h4>
+          
+          <div class="release-status" *ngIf="chapterRelease">
+            <div class="status-indicator" [class.published]="chapterRelease.status === 'PUBLISHED'">
+              <span class="status-dot"></span>
+              <strong>{{chapterRelease.status}}</strong>
+            </div>
+            
+            <p class="release-date" *ngIf="chapterRelease.publishedAt">
+              Published on: {{chapterRelease.publishedAt | date:'medium'}}
+            </p>
+            
+            <button class="primary publish-btn" *ngIf="chapterRelease.status !== 'PUBLISHED'" (click)="publishChapter(active!.chapterId!)">
+              Publish Chapter Now
+            </button>
+          </div>
+
+          <!-- Analytics -->
+          <div class="analytics-dashboard" *ngIf="chapterAnalytics && chapterRelease?.status === 'PUBLISHED'">
+            <h5>Analytics</h5>
+            <div class="metrics-grid">
+              <div class="metric-box">
+                <span class="metric-val">{{chapterAnalytics.views | number}}</span>
+                <span class="metric-label">Views</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-val">{{chapterAnalytics.likes | number}}</span>
+                <span class="metric-label">Likes</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-val">{{chapterAnalytics.commentsCount | number}}</span>
+                <span class="metric-label">Comments</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="empty-state" *ngIf="!active?.chapterId">
+          <p>Select a chapter to manage its release and view analytics.</p>
+        </div>
+
       </div>
     </ng-container>
   </aside>
