@@ -5,20 +5,23 @@
 }
 
 .studio {
-  min-height: 100vh;
+  min-height: calc(100vh - 60px);
   display: grid;
   grid-template-columns: 210px 250px minmax(360px, 1fr) 380px;
-  background: #f9f8f5;
-  color: #272522;
+  background: transparent;
+  color: var(--text-starlight);
 }
 
 /* --- Left Rail --- */
 .rail {
-  background: #1f1d1b;
-  color: #d7d1c8;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--text-muted);
   padding: 26px 16px;
   display: flex;
   flex-direction: column;
+  border-right: 1px solid var(--glass-border);
 }
 
 .brand {
@@ -106,9 +109,11 @@
 
 /* --- Document Outline Pane --- */
 .outline {
-  border-right: 1px solid #e4e1da;
+  border-right: 1px solid var(--glass-border);
   padding: 24px 16px;
-  background: #f5f3ee;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   overflow-y: auto;
 }
 .outline header {
@@ -204,7 +209,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #fffdf9;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 .editor-head {
   display: flex;
@@ -257,16 +264,6 @@
   font-size: 11px;
   display: flex;
   gap: 18px;
-}
-
-/* --- Right Studio Panel --- */
-.right {
-  border-left: 1px solid #e4e1da;
-  background: #f8f7f3;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
 }
 
 .panel-tabs {

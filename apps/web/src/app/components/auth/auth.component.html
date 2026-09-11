@@ -1,24 +1,31 @@
 <section class="auth">
-  <div class="brand"><span>✦</span> manga <em>studio</em></div>
-  <div class="auth-card">
-    <span class="eyebrow">CREATOR ACCOUNT</span>
-    <h1>{{state.authMode==='register' ? 'Start your studio.' : 'Welcome back.'}}</h1>
-    <p>{{state.authMode==='register' ? 'Make a private space for your stories.' : 'Sign in to return to your projects.'}}</p>
+  <div class="hero">
+    <h1 class="text-gradient">Kawakeb Manga Studio.</h1>
+    <p class="subtitle">Where your stories eclipse the stars.</p>
+  </div>
+  
+  <div class="auth-card glass-panel">
+    <h2>{{state.authMode==='register' ? 'Start your journey' : 'Welcome back'}}</h2>
+    <p class="auth-desc">{{state.authMode==='register' ? 'Create a private universe for your projects.' : 'Sign in to access your cosmic studio.'}}</p>
+    
     <form (ngSubmit)="state.authenticate()">
-      <label *ngIf="state.authMode==='register'">Name
-        <input [(ngModel)]="state.name" name="name" required>
-      </label>
-      <label>Email
-        <input [(ngModel)]="state.email" name="email" type="email" required>
-      </label>
-      <label>Password
-        <input [(ngModel)]="state.password" name="password" type="password" minlength="8" required>
-      </label>
+      <div class="input-group" *ngIf="state.authMode==='register'">
+        <input [(ngModel)]="state.name" name="name" placeholder="Creator Name" required>
+      </div>
+      <div class="input-group">
+        <input [(ngModel)]="state.email" name="email" type="email" placeholder="Email Address" required>
+      </div>
+      <div class="input-group">
+        <input [(ngModel)]="state.password" name="password" type="password" placeholder="Password" minlength="8" required>
+      </div>
+      
       <p class="auth-error" *ngIf="state.authError">{{state.authError}}</p>
-      <button class="new" type="submit">{{state.authMode==='register' ? 'Create account' : 'Sign in'}}</button>
+      
+      <button class="btn-primary" type="submit">{{state.authMode==='register' ? 'Create Account' : 'Sign In'}}</button>
     </form>
-    <button class="switch" (click)="state.authMode = state.authMode==='register' ? 'login' : 'register'; state.authError=''">
-      {{state.authMode==='register' ? 'Already creating here? Sign in' : 'New to Manga Studio? Create an account'}}
+    
+    <button class="btn-text" (click)="state.authMode = state.authMode==='register' ? 'login' : 'register'; state.authError=''">
+      {{state.authMode==='register' ? 'Already have an account? Sign in' : 'New to Kawakeb? Create an account'}}
     </button>
   </div>
 </section>

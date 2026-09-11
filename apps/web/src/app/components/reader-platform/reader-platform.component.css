@@ -102,26 +102,35 @@
   align-items: center;
   margin-bottom: 64px;
 }
-.manga-page {
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+:host {
+  display: block;
 }
 
-.comments-section {
-  background: #fff;
-  border-radius: 8px;
-  padding: 32px;
-  border: 1px solid #e7dfd5;
+.reader {
+  min-height: calc(100vh - 60px);
+  background: transparent;
+  display: grid;
+  grid-template-columns: 260px 1fr 340px;
+  color: var(--text-starlight);
 }
-.comments-section h4 {
-  margin: 0 0 24px 0;
+
+.nav-rail {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-right: 1px solid var(--glass-border);
+  padding: 24px;
+  overflow-y: auto;
 }
-.comment-list {
+
+.main-view {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-bottom: 32px;
+  overflow-y: auto;
+  background: transparent;
 }
+
 .comment-header {
   display: flex;
   justify-content: space-between;

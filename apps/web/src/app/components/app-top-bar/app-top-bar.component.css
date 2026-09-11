@@ -2,43 +2,62 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 24px;
-  background: rgba(24, 22, 20, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  padding: 1rem 2rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--glass-border);
   position: sticky;
   top: 0;
-  z-index: 1000;
-  color: #fff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  border-radius: 0;
+  box-shadow: none;
 }
-.global-top-bar .brand {
-  font: 300 18px Georgia, serif;
+.brand {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--text-starlight);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
-.global-top-bar .brand .light {
-  color: #b7afa5;
-  font-style: italic;
+.brand span {
+  background: var(--gradient-kawakeb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.brand .light {
+  font-weight: 300;
+  color: var(--text-muted);
+  -webkit-text-fill-color: var(--text-muted);
 }
 .mode-toggles {
   display: flex;
-  gap: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 .mode-toggles button {
   background: transparent;
-  color: #b7afa5;
-  border: 1px solid transparent;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  cursor: pointer;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.mode-toggles button.active {
+  background: var(--gradient-kawakeb);
+  color: white;
+  box-shadow: 0 2px 10px rgba(162, 48, 237, 0.3);
 }
 .mode-toggles button:hover {
   color: #fff;
   background: #2a2825;
-}
-.mode-toggles button.active {
   color: #fff;
   background: #ea734d;
   font-weight: 600;
